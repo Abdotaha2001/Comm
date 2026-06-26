@@ -118,4 +118,4 @@ Data + training for ~47 models is the **true core cost** of the platform — a m
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `19_DOMAIN_KNOWLEDGE_RULES_SKILLS_AND_MATH.md`**

@@ -75,6 +75,18 @@
 ## 6. Team & roles (lean founding team)
 ML/CV engineer (×1–2) · Backend engineer · Frontend engineer · Data/annotation lead · **Domain expert (high-performance coach + an umpire advisor)**. The domain expert is not optional — they define the rubrics and validate every coaching/officiating output.
 
+### 6.1 — Your case: a **2-person team** (recommended operating mode)
+With two people, do **not** attempt to be the team above — **buy/borrow instead of build** wherever possible:
+- **Scope:** P0 + P1 only. **Single camera (T1)**. **Wave-1 models only.** Defer P2–P4 entirely.
+- **Models:** lean hard on **pretrained foundation models + fine-tuning** (don't train from scratch). Use off-the-shelf detectors/pose; fine-tune the TT-ball detector and 1–2 classifiers only.
+- **Reasoning layers (game plan, Q&A):** use a **grounded LLM (latest Claude)** over your own data instead of training models — this is the single biggest leverage for 2 people.
+- **Data labeling:** outsource annotation; harvest free ground truth via **scoreboard OCR**; use active learning to label only what's uncertain.
+- **Infra:** managed cloud (managed Postgres, a GPU inference provider, object storage) — no Kubernetes/self-hosting yet.
+- **Domain expert:** bring in **one part-time high-performance coach** to define rubrics and sanity-check outputs. Non-negotiable even at 2 people.
+- **Division of labor:** Person A = CV/ML + data; Person B = backend/product/UI. Reliability + the coach-validation loop are shared.
+
+> Net effect: the 2-person plan is **P0 → P1 flagship MVP on a single camera, using foundation models + a grounded LLM for reasoning** — a shippable, honest product. Everything else waits for funding/hiring.
+
 ## 7. Data strategy (the real core cost)
 - **Now:** start harvesting from every processed video (scoreboard OCR = free score ground truth; uncertain frames → label queue via active learning).
 - **Wave 1:** label ball/pose/handedness/grip/stroke sets; bootstrap with public sports datasets + self-supervised pretrain on unlabeled match footage.
