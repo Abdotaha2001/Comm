@@ -74,4 +74,4 @@ You have read the full `MASTER_SPEC/`. Total scope: **~165+ components across 20
 
 To begin: open `00_INDEX.md`, pick **Phase P1**, and convert the highest-value quick wins into tracked issues.
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `17_FLAGSHIP_PLAYER_PROFILE_AND_GAMEPLAN.md`** *(the flagship user-facing product loop)*

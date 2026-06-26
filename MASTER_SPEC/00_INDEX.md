@@ -5,6 +5,8 @@
 
 This document is the single source of truth for **everything the platform must contain**. It is written as a directive specification (prompt-style) so it can be fed to engineers or AI agents part-by-part.
 
+> ⭐ **Flagship product loop (Part 17):** a persistent profile for every player (pro/junior) built from their own videos, plus a "send me the opponent → here's how this player beats them" game-plan generator. It is the headline feature coaches buy the platform for; it composes Parts 04, 07, 08, 10, 11 into one workflow.
+
 ---
 
 ## 0. How to read this spec (the chain)
@@ -30,6 +32,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 14 | `14_INTEGRATIONS_MEDIA_ENGAGEMENT.md` | Audio, equipment, IoT/robots, broadcast, AR/VR, fan products |
 | 15 | `15_FEDERATION_OPS_AND_GOVERNANCE.md` | Federation mgmt, logistics, integrity, privacy, sustainability |
 | 16 | `16_VALIDATION_EFFICACY_AND_ROADMAP.md` | Testing, efficacy proof, metrics, final roadmap |
+| 17 | `17_FLAGSHIP_PLAYER_PROFILE_AND_GAMEPLAN.md` | ⭐ Flagship: player profiles + "how to beat your opponent" game plan |
 
 ---
 
