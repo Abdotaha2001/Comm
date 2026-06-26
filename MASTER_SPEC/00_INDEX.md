@@ -33,6 +33,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 15 | `15_FEDERATION_OPS_AND_GOVERNANCE.md` | Federation mgmt, logistics, integrity, privacy, sustainability |
 | 16 | `16_VALIDATION_EFFICACY_AND_ROADMAP.md` | Testing, efficacy proof, metrics, final roadmap |
 | 17 | `17_FLAGSHIP_PLAYER_PROFILE_AND_GAMEPLAN.md` | ⭐ Flagship: player profiles + "how to beat your opponent" game plan |
+| 18 | `18_MODEL_CATALOG_EVERYTHING_IS_AI.md` | Model catalog — every capability is its own dedicated trained AI (~47 models) |
 
 ---
 
@@ -58,6 +59,7 @@ The platform is **not** a video analyzer. It is a federation of independent **en
 
 1. **Capture-Tier Awareness** — the system always knows whether it is running on `T1`, `T2`, or `T3`, and adjusts which outputs it is allowed to produce and at what confidence.
 2. **Reliability Awareness** — every single number the platform emits carries a calibrated confidence and provenance, and the platform can say **"I don't know"** and escalate to a human.
+3. **Everything-is-a-Model** — every engine is backed by its own **dedicated, fully-trained AI model**, never heuristics. Heuristics exist only as labeled-confidence fallbacks until each model reaches target accuracy. Built feasibly via foundation models + fine-tuning + shared backbones + self-supervision + synthetic data. See **Part 18** for the full ~47-model catalog.
 
 ```
             ┌──────────────── RELIABILITY AWARENESS (layer) ────────────────┐

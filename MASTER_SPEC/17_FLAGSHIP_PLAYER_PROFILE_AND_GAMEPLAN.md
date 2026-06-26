@@ -74,4 +74,4 @@ For **every player you own** (professional or junior): keep a persistent profile
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `18_MODEL_CATALOG_EVERYTHING_IS_AI.md`**
