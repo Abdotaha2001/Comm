@@ -1,0 +1,77 @@
+# 🏓 TT-OS — World-Class AI Table Tennis Platform · MASTER SPECIFICATION
+
+> **ملاحظة (بالعربي):** ده مرجع حيّ متقسّم لأجزاء مترابطة. كل ملف بيخلص بإسم الملف اللي بعده عشان تكمل بالترتيب.
+> الهدف: تحويل مشروع `TT ANALYSIS` (نوتبوك تحليل ماتش فردي) إلى **نظام تشغيل متكامل لكرة الطاولة** بمستوى الاتحاد الدولي (ITTF) واللجان الأولمبية والمنتخبات والأكاديميات.
+
+This document is the single source of truth for **everything the platform must contain**. It is written as a directive specification (prompt-style) so it can be fed to engineers or AI agents part-by-part.
+
+---
+
+## 0. How to read this spec (the chain)
+
+Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. Do not stop until you reach `16_VALIDATION_EFFICACY_AND_ROADMAP.md`.
+
+| # | File | Domain |
+|---|------|--------|
+| 00 | `00_INDEX.md` | Overview, legend, architecture concept (this file) |
+| 01 | `01_COMPUTER_VISION.md` | Detection, tracking, table/net/racket, occlusion, calibration |
+| 02 | `02_CAPTURE_TIERS_AND_3D.md` | Single-camera, multi-camera 3D, sync, triangulation |
+| 03 | `03_BALL_INTELLIGENCE.md` | Speed, spin, trajectory, bounce, landing prediction, aero |
+| 04 | `04_PLAYER_REID_AND_IDENTITY.md` | Face/body/skeleton/style ReID, handedness, grip, player passport |
+| 05 | `05_STROKE_SPIN_FOOTWORK.md` | Full stroke taxonomy, stroke quality, spin & footwork engines |
+| 06 | `06_BIOMECHANICS_AND_SPORTS_SCIENCE.md` | Kinetic chain, fatigue, injury, load, asymmetry |
+| 07 | `07_TACTICAL_AND_OPPONENT_AI.md` | Patterns, sequence mining, win-prob, scouting, psychology |
+| 08 | `08_COACHING_AND_TALENT.md` | Periodization, plans, drills, talent-development framework |
+| 09 | `09_RULES_UMPIRE_SCORE.md` | ITTF rules engine, scoreboard OCR, doubles/para/team, authority |
+| 10 | `10_RELIABILITY_AWARENESS.md` | Confidence, calibration, abstention, graceful degradation |
+| 11 | `11_KNOWLEDGE_AND_EXPERT_SYSTEM.md` | Knowledge graph, causal/expert engine, NL Q&A |
+| 12 | `12_DATA_AND_ML_INFRA.md` | Datasets, annotation, synthetic data, MLOps, edge optimization |
+| 13 | `13_PLATFORM_ARCHITECTURE.md` | Engines, APIs, DB schema, multi-tenancy, streaming, DR |
+| 14 | `14_INTEGRATIONS_MEDIA_ENGAGEMENT.md` | Audio, equipment, IoT/robots, broadcast, AR/VR, fan products |
+| 15 | `15_FEDERATION_OPS_AND_GOVERNANCE.md` | Federation mgmt, logistics, integrity, privacy, sustainability |
+| 16 | `16_VALIDATION_EFFICACY_AND_ROADMAP.md` | Testing, efficacy proof, metrics, final roadmap |
+
+---
+
+## 1. Legend (used in every part)
+
+**Priority**
+- 🔴 **CRITICAL** — the world-class vision is impossible without it.
+- 🟠 **IMPORTANT** — needed for a credible production platform.
+- 🟡 **ENHANCEMENT** — differentiator / long tail.
+
+**Complexity (effort):** `S` (days) · `M` (weeks) · `L` (1–3 months) · `XL` (quarter+ / research).
+
+**Capture Tier** (where a capability becomes possible):
+- `T1` Single camera 2D · `T2` Single camera + 3D-lift · `T3` Multi-camera true 3D.
+
+**Status (to be tracked):** `MISSING` · `WIP` · `DONE`.
+
+---
+
+## 2. Core architectural concept (read before everything)
+
+The platform is **not** a video analyzer. It is a federation of independent **engines** coordinated by an **event bus**, with two cross-cutting layers that touch every other engine:
+
+1. **Capture-Tier Awareness** — the system always knows whether it is running on `T1`, `T2`, or `T3`, and adjusts which outputs it is allowed to produce and at what confidence.
+2. **Reliability Awareness** — every single number the platform emits carries a calibrated confidence and provenance, and the platform can say **"I don't know"** and escalate to a human.
+
+```
+            ┌──────────────── RELIABILITY AWARENESS (layer) ────────────────┐
+            │                                                                │
+ Capture →  CV → Ball → ReID → Stroke/Spin/Footwork → Biomech → Tactical →   │
+            Rules/Umpire → Coaching → Knowledge Graph → Expert System →      │
+            Reports / APIs / UI / Federation Ops                             │
+            │                                                                │
+            └──────────────── CAPTURE-TIER AWARENESS (layer) ───────────────┘
+```
+
+---
+
+## 3. Current baseline (what exists today — V21.0.0)
+
+A single Colab notebook: YOLO11 detection + IoU/ReID tracking, homography table, hybrid ball detector + Kalman, a 12-guard game state machine with heuristic ITTF detectors, a shallow pose/shot classifier (~8 stroke types), rule-based coaching/training templates, charts, and a results.json. **Estimated coverage of the full vision: ~15%.** Everything beyond that is specified in parts 01–16.
+
+---
+
+➡️ **NEXT FILE: `01_COMPUTER_VISION.md`**
