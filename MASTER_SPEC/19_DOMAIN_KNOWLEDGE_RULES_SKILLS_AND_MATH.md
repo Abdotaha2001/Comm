@@ -90,6 +90,43 @@ Short push · Long push · **Flick/Flip** (compressed wrist attack of a short ba
 ### B6. Spin types (Part 18 M12/M13 label set)
 Topspin · Backspin (underspin) · Sidespin (left / right) · **Corkspin** (drill/rotational about flight axis) · Mixed (topspin+side, back+side) · **No-spin**. Quantify by **axis** (unit vector ω̂) and **rate** (RPM).
 
+### B7. Additional strokes & variations (found in deeper research — extends M22–M26 labels)
+| Technique | What it is |
+|-----------|-----------|
+| **Hook loop** | loop brushing the **outside** of the ball → adds sidespin curving one way |
+| **Fade loop** | loop brushing the **inside** of the ball → breaks into the opponent's crossover |
+| **No-spin loop** | loop motion with minimal spin — deception even at top level |
+| **Power loop vs spin (brush) loop** | speed-dominant vs spin-dominant loop (intensity classes) |
+| **Counter-drive / counter-hit** | aggressive off-the-bounce counter with closed racket (between block and counterloop) |
+| **Drop shot** | short, soft touch off a topspin to bring the opponent in |
+| **Dig** | reflex defensive return of a smash from close to the table |
+| **Hook serve** | deceptive sidespin serve (kin to reverse-pendulum/BH spin), topspin disguised as backspin |
+| **Windshield-wiper serve** | wiping motion producing variable spin incl. **no-spin** by "bumping" |
+| **Fast/long (deep) serve** | sudden deep fast serve to surprise / force a weak block |
+| **Push variations** | short / long / **fast** / **heavy (slow)** / **sidespin** push |
+| **Block variations** | passive / **active (punch)** / **soft** / **jab** / **chop** / **sidespin** block |
+| **Chop variations** | heavy / **float (no-spin)** / **sidespin** chop |
+| **Twiddle** | **rotating the racket in the hand** mid-rally to switch rubber sides (combination-bat choppers) — a deception skill of its own |
+
+### B8. Playing styles (the **matchup taxonomy** — powers Part 17 + models M34/M35)
+| Style | Signature |
+|-------|-----------|
+| Shakehand **FH looper** | wins with fast spinny forehand loops (dominant men's style) |
+| Shakehand **two-winged attacker** | backhand loop as a primary weapon too |
+| **Counter-driver / blocker** | close to table, blocks & drives, changes angle/rhythm |
+| **All-rounder** | reflexes + defensive placement, adapts |
+| **Chopper / modern defender** | heavy backspin chops from distance, twiddles, varies spin |
+| Penhold **FH looper** | penhold grip, forehand-dominant |
+| Penhold **two-sided looper (RPB)** | reverse-penhold-backhand for both wings |
+| **Short-pips hitter** | flat fast hitting over the table, negates spin |
+| **Combination-bat chopper** | inverted one side + long pips/anti other side + twiddle |
+
+### B9. Grips (technique interpretation — model M19, Part 04)
+Shakehand · Penhold (Japanese/Korean traditional) · Penhold (Chinese, with **RPB**) · **Seemiller** (American) · rare: V-grip / others. Grip changes stroke mechanics → the classifier must condition on it.
+
+### B10. Rubber / material types (spin-reading **priors** — links Part 14 equipment + M12 spin)
+**Inverted / smooth** (standard spin) · **Short pips** (flat, fast, low spin) · **Long pips** (spin-reversal, insensitive) · **Anti-spin** (negates spin). The spin model must know the rubber, because **long pips/anti invert the expected spin** — a major source of error if ignored.
+
 ---
 
 ## C. THE MATH (the "strongest approach" — physics + CV + ML)
@@ -174,6 +211,8 @@ This ODE (integrate with RK4) is the **forward model** for trajectory + landing 
 - [Every Ping Pong Serve — Table Tennis Teacher](https://tabletennisteacher.com/serves/) · [Reverse pendulum — PingSunday](https://pingsunday.com/reverse-pendulum-serve/)
 - [Types of shots — Ping Pong Wiki](https://pingpong.fandom.com/wiki/Types_of_shots) · [Advanced techniques — Megaspin](https://www.megaspin.net/info/advanced.asp)
 - [Footwork patterns — Table Tennis Teacher](https://tabletennisteacher.com/footwork/) · [Chassé vs one-step biomechanics (elite study, PMC)](https://pmc.ncbi.nlm.nih.gov/articles/PMC12131136/)
+- [Glossary of table tennis — Wikipedia](https://en.wikipedia.org/wiki/Table_tennis_terminology) · [Table tennis styles & grips — Wikipedia](https://en.wikipedia.org/wiki/Table_tennis_styles)
+- [Hooks and fades (sidespin loops) — Expert Table Tennis](https://www.experttabletennis.com/hooks-and-fades/) · [Twiddling — Samson Dubina Academy](https://samsondubina.com/coaching/twiddling) · [Advanced techniques — Megaspin](https://www.megaspin.net/info/advanced.asp)
 
 ---
 
