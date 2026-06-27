@@ -52,4 +52,4 @@ Venue · date · lighting type · camera model/config (fps/res/shutter) · tier 
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `36_RISK_REGISTER_AND_ASSUMPTIONS.md`**
