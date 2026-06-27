@@ -30,3 +30,24 @@ def client():
     with TestClient(main.app) as c:
         yield c
     main.app.dependency_overrides.clear()
+
+
+def _register_login(client, email, password, role):
+    client.post(
+        "/v1/auth/register",
+        json={"email": email, "password": password, "role": role},
+    )
+    tok = client.post(
+        "/v1/auth/login", json={"email": email, "password": password}
+    ).json()["access_token"]
+    return {"Authorization": f"Bearer {tok}"}
+
+
+@pytest.fixture()
+def coach_headers(client):
+    return _register_login(client, "coach@x.com", "pw", "coach")
+
+
+@pytest.fixture()
+def player_headers(client):
+    return _register_login(client, "player@x.com", "pw", "player")

@@ -3,12 +3,15 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from ..deps import get_current_org
+from ..deps import get_current_org, require_roles
 from ..db import get_db
 from ..models import Organization, Player
 from ..schemas import PlayerCreate, PlayerRead, PlayerUpdate
 
 router = APIRouter(prefix="/players", tags=["players"])
+
+# Roles allowed to modify players (read is open to any authenticated user).
+WRITE_ROLES = ("admin", "coach")
 
 
 def _get_owned(pid: str, db: Session, org: Organization) -> Player:
@@ -18,7 +21,12 @@ def _get_owned(pid: str, db: Session, org: Organization) -> Player:
     return p
 
 
-@router.post("", response_model=PlayerRead, status_code=201)
+@router.post(
+    "",
+    response_model=PlayerRead,
+    status_code=201,
+    dependencies=[Depends(require_roles(*WRITE_ROLES))],
+)
 def create_player(
     body: PlayerCreate,
     db: Session = Depends(get_db),
@@ -52,7 +60,11 @@ def get_player(
     return _get_owned(pid, db, org)
 
 
-@router.patch("/{pid}", response_model=PlayerRead)
+@router.patch(
+    "/{pid}",
+    response_model=PlayerRead,
+    dependencies=[Depends(require_roles(*WRITE_ROLES))],
+)
 def update_player(
     pid: str,
     body: PlayerUpdate,
@@ -67,7 +79,11 @@ def update_player(
     return player
 
 
-@router.delete("/{pid}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{pid}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_roles(*WRITE_ROLES))],
+)
 def archive_player(
     pid: str,
     db: Session = Depends(get_db),

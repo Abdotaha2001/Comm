@@ -30,10 +30,18 @@ cd backend
 pytest -q
 ```
 
+## Auth (JWT + RBAC)
+```bash
+# register (creates an org + user), then login for a bearer token:
+curl -X POST localhost:8000/v1/auth/register -d '{"email":"c@x.com","password":"pw","role":"coach"}' -H 'content-type: application/json'
+TOKEN=$(curl -s -X POST localhost:8000/v1/auth/login -d '{"email":"c@x.com","password":"pw"}' -H 'content-type: application/json' | jq -r .access_token)
+curl localhost:8000/v1/players -H "Authorization: Bearer $TOKEN"
+```
+Writes to `/v1/players` require role `admin` or `coach` (others get 403); reads need any valid token (else 401).
+
 ## What's here vs next
-- ✅ `/healthz`, `/v1/auth/login` (stub), `/v1/auth/me`, `/v1/players` CRUD (+ archive), enum validation.
-- ⬜ Next: Alembic migrations from `schema/schema.sql`, real JWT auth + RBAC, videos/analysis worker,
-  profiles, opponents, matchups, game-plan (BUILD_ORDER Phase 1).
+- ✅ Alembic migrations · JWT auth + RBAC · `/healthz` · `/v1/auth/{register,login,me}` · `/v1/players` CRUD (+ archive) · enum validation.
+- ⬜ Next: videos + analysis worker, then profiles → opponents → matchups → game-plan (BUILD_ORDER Phase 1).
 
 ## Layout
 ```

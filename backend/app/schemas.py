@@ -63,9 +63,29 @@ class PlayerRead(PlayerCreate):
     model_config = ConfigDict(from_attributes=True)
 
 
+Role = Literal["admin", "coach", "player", "umpire", "medical", "scout"]
+
+
 class AuthLogin(BaseModel):
     email: str
     password: str
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str] = None
+    org_name: Optional[str] = None
+    role: Role = "admin"
+
+
+class UserRead(BaseModel):
+    id: str
+    org_id: str
+    email: str
+    full_name: Optional[str] = None
+    role: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenResponse(BaseModel):

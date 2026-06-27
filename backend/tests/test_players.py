@@ -1,6 +1,7 @@
-def test_create_get_list_player(client):
+def test_create_get_list_player(client, coach_headers):
     r = client.post(
         "/v1/players",
+        headers=coach_headers,
         json={
             "full_name": "Ahmed",
             "type": "junior",
@@ -15,16 +16,19 @@ def test_create_get_list_player(client):
     assert body["handedness"] == "left"
     assert body["status"] == "active"
 
-    assert client.get(f"/v1/players/{pid}").status_code == 200
-    listing = client.get("/v1/players").json()
+    assert client.get(f"/v1/players/{pid}", headers=coach_headers).status_code == 200
+    listing = client.get("/v1/players", headers=coach_headers).json()
     assert len(listing) == 1
 
 
-def test_assign_disability_then_archive(client):
-    pid = client.post("/v1/players", json={"full_name": "Sara"}).json()["id"]
+def test_assign_disability_then_archive(client, coach_headers):
+    pid = client.post(
+        "/v1/players", headers=coach_headers, json={"full_name": "Sara"}
+    ).json()["id"]
 
     patched = client.patch(
         f"/v1/players/{pid}",
+        headers=coach_headers,
         json={
             "para_class": 5,
             "mobility_mode": "wheelchair",
@@ -35,21 +39,35 @@ def test_assign_disability_then_archive(client):
     assert patched.json()["para_class"] == 5
     assert patched.json()["mobility_mode"] == "wheelchair"
 
-    assert client.delete(f"/v1/players/{pid}").status_code == 204
-    # archived players drop out of the active listing
-    assert client.get("/v1/players").json() == []
-    assert client.get(f"/v1/players/{pid}").status_code == 200  # still fetchable by id
+    assert client.delete(f"/v1/players/{pid}", headers=coach_headers).status_code == 204
+    assert client.get("/v1/players", headers=coach_headers).json() == []
+    assert client.get(f"/v1/players/{pid}", headers=coach_headers).status_code == 200
 
 
-def test_invalid_enum_rejected(client):
-    r = client.post("/v1/players", json={"full_name": "X", "handedness": "sideways"})
+def test_invalid_enum_rejected(client, coach_headers):
+    r = client.post(
+        "/v1/players",
+        headers=coach_headers,
+        json={"full_name": "X", "handedness": "sideways"},
+    )
     assert r.status_code == 422
 
 
-def test_para_class_out_of_range_rejected(client):
-    r = client.post("/v1/players", json={"full_name": "X", "para_class": 12})
+def test_para_class_out_of_range_rejected(client, coach_headers):
+    r = client.post(
+        "/v1/players", headers=coach_headers, json={"full_name": "X", "para_class": 12}
+    )
     assert r.status_code == 422
 
 
-def test_missing_player_404(client):
-    assert client.get("/v1/players/does-not-exist").status_code == 404
+def test_missing_player_404(client, coach_headers):
+    assert (
+        client.get("/v1/players/does-not-exist", headers=coach_headers).status_code
+        == 404
+    )
+
+
+def test_players_require_auth(client):
+    # No bearer token → 401
+    assert client.get("/v1/players").status_code == 401
+    assert client.post("/v1/players", json={"full_name": "X"}).status_code == 401
