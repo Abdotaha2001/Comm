@@ -37,6 +37,8 @@ class User(Base):
     email = Column(String, nullable=False, unique=True)
     full_name = Column(String)
     role = Column(String, nullable=False, default="coach")
+    password_hash = Column(String)
+    status = Column(String, nullable=False, default="active")
     created_at = Column(DateTime, default=_now)
 
 

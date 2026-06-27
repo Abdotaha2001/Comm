@@ -10,9 +10,19 @@ data model in `schema/schema.sql` (MASTER_SPEC Part 27). Ships a working
 ```bash
 cd backend
 pip install -r requirements.txt
+alembic upgrade head          # create/upgrade the schema (DATABASE_URL)
 uvicorn app.main:app --reload
 # → http://127.0.0.1:8000/healthz   and   /docs (Swagger UI)
 ```
+
+## Migrations (Alembic)
+```bash
+alembic upgrade head                      # apply
+alembic revision -m "add videos"          # new migration (then edit it)
+alembic downgrade -1                       # roll back one
+```
+Migrations are the source of truth for the schema; the ORM models in `app/models.py`
+mirror them and will grow to match `schema/schema.sql` as features land.
 
 ## Test
 ```bash

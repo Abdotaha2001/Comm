@@ -28,5 +28,9 @@ jobs:
           python-version: "3.12"
       - name: Install deps
         run: pip install -r requirements.txt
+      - name: Apply migrations (sqlite)
+        run: alembic upgrade head
+        env:
+          DATABASE_URL: sqlite:///./ci.db
       - name: Run tests
         run: pytest -q
