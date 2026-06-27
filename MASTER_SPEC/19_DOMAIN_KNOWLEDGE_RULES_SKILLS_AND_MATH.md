@@ -216,4 +216,4 @@ This ODE (integrate with RK4) is the **forward model** for trajectory + landing 
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `20_EQUIPMENT_INTELLIGENCE.md`**

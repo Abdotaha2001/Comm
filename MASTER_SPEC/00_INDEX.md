@@ -35,6 +35,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 17 | `17_FLAGSHIP_PLAYER_PROFILE_AND_GAMEPLAN.md` | ⭐ Flagship: player profiles + "how to beat your opponent" game plan |
 | 18 | `18_MODEL_CATALOG_EVERYTHING_IS_AI.md` | Model catalog — every capability is its own dedicated trained AI (~47 models) |
 | 19 | `19_DOMAIN_KNOWLEDGE_RULES_SKILLS_AND_MATH.md` | Official ITTF rules + full skill taxonomy + the physics & ML equations |
+| 20 | `20_EQUIPMENT_INTELLIGENCE.md` | Rubbers/sponge/pips/blades — equipment as a mandatory spin prior |
 
 ---
 
