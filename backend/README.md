@@ -40,8 +40,13 @@ curl localhost:8000/v1/players -H "Authorization: Bearer $TOKEN"
 Writes to `/v1/players` require role `admin` or `coach` (others get 403); reads need any valid token (else 401).
 
 ## What's here vs next
-- ✅ Alembic migrations · JWT auth + RBAC · `/healthz` · `/v1/auth/{register,login,me}` · `/v1/players` CRUD (+ archive) · enum validation.
-- ⬜ Next: videos + analysis worker, then profiles → opponents → matchups → game-plan (BUILD_ORDER Phase 1).
+**Phase 1 (done):** Alembic migrations · JWT auth + RBAC · players CRUD · video upload +
+analysis worker (real OpenCV ball detection → rallies/shots/events) · player profiles →
+opponent dossiers → matchups → game plans (rule-based, Part 21).
+**Phase 2 (in progress):** scoreboard OCR (7-segment, free ground truth) · markerless
+spin estimation (Magnus/curvature) · benchmark harness + golden-set gate (`python -m app.benchmark`).
+**Next:** swap the OpenCV baseline for a deep detector (TTNet/TrackNet/YOLO — Part 26) behind
+the same `BallDetector`; move the worker to a GPU queue; real spin via SpinDOE; 3D (multi-cam).
 
 ## Layout
 ```

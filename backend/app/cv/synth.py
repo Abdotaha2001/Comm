@@ -16,7 +16,8 @@ def write_synthetic_video(
     h: int = 240,
     fps: int = 30,
     score: Optional[Tuple[int, int]] = None,
-) -> str:
+    return_truth: bool = False,
+):
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # AVI/MJPG works without ffmpeg
     writer = cv2.VideoWriter(path, fourcc, fps, (w, h))
     if not writer.isOpened():
@@ -25,7 +26,8 @@ def write_synthetic_video(
     x, y = 20.0, 60.0
     vx, vy = 4.0, 3.0
     g = 0.6  # gravity → bounces
-    for _ in range(n_frames):
+    truth = []
+    for fidx in range(n_frames):
         frame = np.zeros((h, w, 3), dtype=np.uint8)
         if score is not None:
             render_scoreboard(frame, score[0], score[1])
@@ -38,7 +40,9 @@ def write_synthetic_video(
         if x > w - 12 or x < 12:  # bounce off the sides → a "shot"
             vx = -vx
             x = float(np.clip(x, 12, w - 12))
-        cv2.circle(frame, (int(x), int(y)), 7, (255, 255, 255), -1)
+        cx, cy = int(x), int(y)
+        cv2.circle(frame, (cx, cy), 7, (255, 255, 255), -1)
         writer.write(frame)
+        truth.append((fidx, float(cx), float(cy)))  # ground-truth ball centre
     writer.release()
-    return path
+    return (path, truth) if return_truth else path
