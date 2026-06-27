@@ -41,6 +41,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 23 | `23_ATHLETE_DEVELOPMENT_PHYSICAL_AND_MENTAL.md` | LTAD stages + windows of trainability + physical conditioning + mental training |
 | 24 | `24_PARA_TABLE_TENNIS_CLASSIFICATION.md` | Para classes 1–11 + impairment types + rules + assign-a-disability-to-any-player |
 | 25 | `25_ANATOMY_AND_MOVEMENT_DYNAMICS.md` | Anatomy, kinetic chain, joint actions & full-body stroke biomechanics |
+| 26 | `26_EXISTING_ASSETS_PRETRAINED_AND_DATASETS.md` | ⭐ Reuse map: open pretrained models, datasets & repos (TTNet/TrackNet/SpinDOE/TTStroke-21…) |
 
 ---
 

@@ -97,4 +97,4 @@ Ground reaction → Ankle → Knee → Hip / Trunk (axial rotation) → Shoulder
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `26_EXISTING_ASSETS_PRETRAINED_AND_DATASETS.md`**
