@@ -2,10 +2,13 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    JSON,
     Column,
     Date,
     DateTime,
+    Float,
     ForeignKey,
+    Integer,
     SmallInteger,
     String,
     Text,
@@ -63,3 +66,95 @@ class Player(Base):
     status = Column(String, nullable=False, default="active")
     created_at = Column(DateTime, default=_now)
     updated_at = Column(DateTime, default=_now, onupdate=_now)
+
+
+class Video(Base):
+    __tablename__ = "videos"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    org_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    player_id = Column(String(36), ForeignKey("players.id"))
+    source = Column(String, nullable=False, default="upload")
+    storage_key = Column(String)
+    status = Column(String, nullable=False, default="uploaded")
+    capture_tier = Column(String, nullable=False, default="t1")
+    fps = Column(Float)
+    width = Column(Integer)
+    height = Column(Integer)
+    duration_sec = Column(Float)
+    created_at = Column(DateTime, default=_now)
+
+
+class AnalysisRun(Base):
+    __tablename__ = "analysis_runs"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    video_id = Column(String(36), ForeignKey("videos.id"), nullable=False)
+    status = Column(String, nullable=False, default="queued")
+    model_versions = Column(JSON)
+    input_quality = Column(JSON)
+    reliability_index = Column(Float)
+    error = Column(Text)
+    started_at = Column(DateTime)
+    finished_at = Column(DateTime)
+    created_at = Column(DateTime, default=_now)
+
+
+class Match(Base):
+    __tablename__ = "matches"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    analysis_run_id = Column(String(36), ForeignKey("analysis_runs.id"), nullable=False)
+    video_id = Column(String(36), ForeignKey("videos.id"), nullable=False)
+    player1_id = Column(String(36), ForeignKey("players.id"))
+    player2_id = Column(String(36), ForeignKey("players.id"))
+    score = Column(JSON)
+    format = Column(String)
+    is_doubles = Column(SmallInteger, nullable=False, default=0)
+    created_at = Column(DateTime, default=_now)
+
+
+class Rally(Base):
+    __tablename__ = "rallies"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    match_id = Column(String(36), ForeignKey("matches.id"), nullable=False)
+    idx = Column(Integer, nullable=False)
+    start_frame = Column(Integer)
+    end_frame = Column(Integer)
+    start_ms = Column(Integer)
+    end_ms = Column(Integer)
+    server_player_id = Column(String(36), ForeignKey("players.id"))
+    winner_player_id = Column(String(36), ForeignKey("players.id"))
+    reason = Column(String)
+    duration_sec = Column(Float)
+    quality = Column(Float)
+    confidence = Column(Float)
+
+
+class Shot(Base):
+    __tablename__ = "shots"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    rally_id = Column(String(36), ForeignKey("rallies.id"), nullable=False)
+    idx = Column(Integer, nullable=False)
+    player_id = Column(String(36), ForeignKey("players.id"))
+    frame = Column(Integer)
+    ts_ms = Column(Integer)
+    stroke_type = Column(String)
+    spin_type = Column(String)
+    wing = Column(String)
+    speed_kmh = Column(Float)
+    speed_ci = Column(Float)
+    quality = Column(Float)
+    confidence = Column(Float)
+    provenance = Column(JSON)
+
+
+class Event(Base):
+    __tablename__ = "events"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    rally_id = Column(String(36), ForeignKey("rallies.id"))
+    match_id = Column(String(36), ForeignKey("matches.id"))
+    type = Column(String, nullable=False)
+    frame = Column(Integer)
+    ts_ms = Column(Integer)
+    side = Column(String)
+    position = Column(JSON)
+    confidence = Column(Float)
+    provenance = Column(JSON)

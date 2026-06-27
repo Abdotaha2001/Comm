@@ -4,23 +4,26 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import app.models  # noqa: F401  (register all tables on Base.metadata)
 from app import main
 from app.db import Base, get_db
 
 
 @pytest.fixture()
-def client():
-    # Shared in-memory SQLite across all sessions in the test (StaticPool).
+def _Session():
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    TestingSession = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     Base.metadata.create_all(bind=engine)
+    return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
+
+@pytest.fixture()
+def client(_Session):
     def override_get_db():
-        db = TestingSession()
+        db = _Session()
         try:
             yield db
         finally:
@@ -30,6 +33,15 @@ def client():
     with TestClient(main.app) as c:
         yield c
     main.app.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def db(_Session):
+    s = _Session()
+    try:
+        yield s
+    finally:
+        s.close()
 
 
 def _register_login(client, email, password, role):

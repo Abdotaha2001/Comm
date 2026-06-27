@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from .config import settings
-from .routers import auth, health, players
+from .routers import auth, health, matches, players, videos
 
 
 def create_app() -> FastAPI:
@@ -11,6 +11,8 @@ def create_app() -> FastAPI:
     app.include_router(health.router)  # /healthz (unprefixed)
     app.include_router(auth.router, prefix=settings.api_prefix)
     app.include_router(players.router, prefix=settings.api_prefix)
+    app.include_router(videos.router, prefix=settings.api_prefix)
+    app.include_router(matches.router, prefix=settings.api_prefix)
     return app
 
 

@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -92,3 +92,72 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int = 3600
+
+
+# ── Videos / analysis / results ───────────────────────────────
+class VideoRead(BaseModel):
+    id: str
+    player_id: Optional[str] = None
+    source: str
+    status: str
+    capture_tier: str
+    fps: Optional[float] = None
+    duration_sec: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AnalysisRunRead(BaseModel):
+    id: str
+    video_id: str
+    status: str
+    reliability_index: Optional[float] = None
+    input_quality: Optional[dict] = None
+    model_versions: Optional[dict] = None
+    error: Optional[str] = None
+    match_id: Optional[str] = None
+
+
+class EventRead(BaseModel):
+    type: str
+    frame: Optional[int] = None
+    ts_ms: Optional[int] = None
+    side: Optional[str] = None
+    position: Optional[dict] = None
+    confidence: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ShotRead(BaseModel):
+    idx: int
+    frame: Optional[int] = None
+    ts_ms: Optional[int] = None
+    stroke_type: Optional[str] = None
+    spin_type: Optional[str] = None
+    wing: Optional[str] = None
+    speed_kmh: Optional[float] = None
+    speed_ci: Optional[float] = None
+    confidence: Optional[float] = None
+    provenance: Optional[dict] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RallyRead(BaseModel):
+    idx: int
+    start_frame: Optional[int] = None
+    end_frame: Optional[int] = None
+    duration_sec: Optional[float] = None
+    quality: Optional[float] = None
+    confidence: Optional[float] = None
+    shots: List[ShotRead] = []
+    events: List[EventRead] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MatchRead(BaseModel):
+    id: str
+    video_id: str
+    player1_id: Optional[str] = None
+    player2_id: Optional[str] = None
+    is_doubles: int = 0
+    rallies: List[RallyRead] = []
+    model_config = ConfigDict(from_attributes=True)

@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_seconds: int = 3600
 
+    # Media storage for uploaded videos (local dir for the scaffold; S3 in prod)
+    media_dir: str = "./media"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
