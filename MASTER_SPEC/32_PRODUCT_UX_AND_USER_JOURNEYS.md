@@ -69,4 +69,4 @@ Dashboard
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `33_COMPETITIVE_LANDSCAPE.md`**
