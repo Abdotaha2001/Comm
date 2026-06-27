@@ -318,4 +318,4 @@ Grounds the Knowledge Graph (Part 11) and mirrors the data model (Part 27).
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `29_EVALUATION_METRICS_CATALOG.md`**
