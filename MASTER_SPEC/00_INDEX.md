@@ -37,6 +37,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 19 | `19_DOMAIN_KNOWLEDGE_RULES_SKILLS_AND_MATH.md` | Official ITTF rules + full skill taxonomy + the physics & ML equations |
 | 20 | `20_EQUIPMENT_INTELLIGENCE.md` | Rubbers/sponge/pips/blades — equipment as a mandatory spin prior |
 | 21 | `21_TACTICAL_SYSTEMS_AND_MATCH_STRATEGY.md` | Serve+3rd-ball systems + how-to-beat-each-style playbook (grounds M35/M36) |
+| 22 | `22_TRAINING_DRILLS_AND_METHODOLOGY.md` | Drill library + multiball + motor-learning methodology (grounds M43 / Part 08) |
 
 ---
 

@@ -72,4 +72,4 @@ The dominant scoring pattern in modern TT:
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `22_TRAINING_DRILLS_AND_METHODOLOGY.md`**
