@@ -45,6 +45,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 27 | `27_DATA_MODEL_AND_API_CONTRACT.md` | 🔧 Build artifact: DB schema + REST API + reliability envelope (→ `schema/`, `api/`) |
 | 28 | `28_ONTOLOGY_AND_GLOSSARY.md` | EN↔AR controlled vocabulary: entity/event taxonomy + full bilingual term glossary |
 | 29 | `29_EVALUATION_METRICS_CATALOG.md` | Per-model metric · target · eval set · golden-set gate (enforced by `backend/app/benchmark.py`) |
+| 30 | `30_ANNOTATION_LABELING_PROTOCOL.md` | How to label every data type + rubrics + inter-annotator agreement gate |
 
 ---
 
