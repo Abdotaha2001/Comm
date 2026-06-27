@@ -46,6 +46,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 28 | `28_ONTOLOGY_AND_GLOSSARY.md` | EN↔AR controlled vocabulary: entity/event taxonomy + full bilingual term glossary |
 | 29 | `29_EVALUATION_METRICS_CATALOG.md` | Per-model metric · target · eval set · golden-set gate (enforced by `backend/app/benchmark.py`) |
 | 30 | `30_ANNOTATION_LABELING_PROTOCOL.md` | How to label every data type + rubrics + inter-annotator agreement gate |
+| 31 | `31_SECURITY_PRIVACY_THREAT_MODEL.md` | Data classification, auth/tenancy, privacy/consent, STRIDE+ML threat model |
 
 ---
 

@@ -69,4 +69,4 @@ Models flag **low-confidence / high-disagreement** frames → these are pushed t
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `31_SECURITY_PRIVACY_THREAT_MODEL.md`**
