@@ -27,12 +27,15 @@
 |-------------|---------|------|-------|---------|---------------------|--------------|
 | **Inverted / smooth — الجلد** | pips face **in**, smooth out | ★★★★★ | ★★★★☆ | ★★★☆ | **Offensive** standard | loopers, attackers (both wings) |
 | **Short pips — السريعة** | short pips **out** | ★★☆ | ★★★★☆ | ★★★★ | Offensive (flat hit/block) | close-table hitters, BH hitters, penhold |
+| **Medium pips** | medium-length pips **out** | low + some disruption | ★★★ | ★★★ (wobble) | hybrid off/def | balances short-pips control & long-pips disruption, keeps some attack |
 | **Long pips — الحبوب الطويلة** | tall thin pips **out** | reverses incoming | ★☆ | ★★ (wobble) | **Defensive** | choppers, blockers, disruptors |
 | **Anti-spin — الصد/الأنتي** | smooth but **slick/low-friction** | kills spin | ★☆ | ★★★ | **Defensive/deception** | blockers, twiddlers |
 
 ### Inverted sub-types (both are "الجلد" but behave differently)
 - **Tacky (Chinese, e.g. Hurricane):** sticky topsheet, **max spin** but needs the player's own power; lower built-in speed. Heavy-spin loopers.
 - **Tensor / grippy (European-Japanese ESN, e.g. Tenergy):** built-in **catapult/spring**, springy, faster with less effort; slightly less raw tackiness. Modern all-court loopers.
+- **Hybrid (e.g. Dignics 09C):** tacky/grippy topsheet **+ European tensor sponge** → Chinese spin feel **with** built-in catapult. Fast-growing modern category.
+- **Tacky vs grippy:** *tacky* = ball physically **sticks** (Chinese — spin from grip, needs the player's power); *grippy* = high-friction **non-sticky** (European tensor — spin from speed/dwell). Hybrids blend both. This distinction changes the contact-friction prior for the spin model.
 
 ---
 
@@ -112,13 +115,13 @@ Spin transfer at contact scales with the tangential friction impulse. Inverted t
 ---
 
 ## H. ITTF equipment rules (officiating — links Part 09)
-- Covering ≤ **4.0 mm** total (sponge + topsheet). · Two sides **different colors** (black + bright approved). · Only **LARC-approved** rubbers. · Pip height/aspect-ratio limits (no frictionless long pips). · Blade ≥ **85% natural wood** by thickness. · **Boosting** (illegal speed-glue-like tuning) is banned → detection is a Part 14 target.
+- Covering ≤ **4.0 mm** total (sponge + topsheet). · Two sides **different colors** (black + bright approved). · Only **LARC-approved** rubbers. · Pip height/aspect-ratio limits **+ minimum surface friction (≥ 25 mN, since 1 July 2008)** → "**frictionless**" long pips are **banned**. · Blade ≥ **85% natural wood** by thickness. · **Boosting** (illegal speed-glue-like tuning) is banned → detection is a Part 14 target.
 
 ---
 
 ## Sources
-Established table-tennis equipment domain knowledge (ITTF technical regulations; standard manufacturer/coaching references). Live citations to be appended when web search is available (rate-limited at authoring time).
+- [Table tennis rubber — Wikipedia](https://en.wikipedia.org/wiki/Table_tennis_rubber) (frictionless ban, min friction 25 mN since 1 Jul 2008; hybrid rubbers) · [Rubber types explained — TT-Lab](https://tabletennis-lab.com/en/rubber-types-en/) · [Short/medium/long pips — PingSunday](https://pingsunday.com/understanding-short-medium-and-long-pips-in-table-tennis/) · [Grippy vs tacky — Racket Insight](https://racketinsight.com/table-tennis/grippy-vs-tacky-rubbers-explained/) · [Rubber guide — Megaspin](https://www.megaspin.net/store/extra/rubber-guide.asp)
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `21_TACTICAL_SYSTEMS_AND_MATCH_STRATEGY.md`**
