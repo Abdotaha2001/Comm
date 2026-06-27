@@ -4,12 +4,14 @@ This is a real (classical-CV) derivation from actual detections — not a mock.
 Speed is honestly flagged uncalibrated (tier t1). Stroke/spin classification is
 a baseline placeholder until pose/deep models land (MASTER_SPEC Parts 05, 18, 26).
 """
+from collections import Counter
 from typing import Optional
 
 import cv2
 
 from .detector import BallDetector
 from .opencv_detector import OpenCVBallDetector
+from .scoreboard import read_scoreboard
 
 MAX_GAP = 8  # frames of no-detection that split rallies
 
@@ -28,6 +30,7 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
     h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 0
 
     track = []  # (frame_idx, x, y, r, conf)
+    score_reads = []
     idx = 0
     while True:
         ok, frame = cap.read()
@@ -36,8 +39,20 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
         d = det.detect(frame, idx)
         if d is not None:
             track.append((idx, d.x, d.y, d.radius, d.confidence))
+        sb = read_scoreboard(frame)
+        if sb is not None:
+            score_reads.append((sb[0], sb[1]))
         idx += 1
     cap.release()
+
+    # Scoreboard OCR: the consensus (mode) reading across frames = free ground truth.
+    score = None
+    if score_reads:
+        (p1, p2), cnt = Counter(score_reads).most_common(1)[0]
+        score = {
+            "p1": p1, "p2": p2, "source": "ocr_7seg",
+            "frames_read": cnt, "consensus": round(cnt / len(score_reads), 3),
+        }
 
     total = idx
     detection_rate = (len(track) / total) if total else 0.0
@@ -113,5 +128,6 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
         "detector": det.name, "detection_rate": round(detection_rate, 3),
         "reliability_index": reliability_index,
         "px_per_m": round(px_per_m, 2), "speed_calibrated": False,
+        "score": score,
         "rallies": out_rallies,
     }

@@ -35,7 +35,7 @@ def analyze_run(run_id: str, db: Session) -> str:
             analysis_run_id=run.id,
             video_id=video.id,
             player1_id=video.player_id,
-            score={},
+            score=result.get("score") or {},
         )
         db.add(match)
         db.flush()

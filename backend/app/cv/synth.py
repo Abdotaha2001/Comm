@@ -1,8 +1,12 @@
 """Generate a synthetic test clip: a bright ball moving and bouncing on a dark
 background. Lets us exercise the real CV pipeline end-to-end with no external
 video, no GPU, and deterministic content (great for CI)."""
+from typing import Optional, Tuple
+
 import cv2
 import numpy as np
+
+from .scoreboard import render_scoreboard
 
 
 def write_synthetic_video(
@@ -11,6 +15,7 @@ def write_synthetic_video(
     w: int = 320,
     h: int = 240,
     fps: int = 30,
+    score: Optional[Tuple[int, int]] = None,
 ) -> str:
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # AVI/MJPG works without ffmpeg
     writer = cv2.VideoWriter(path, fourcc, fps, (w, h))
@@ -22,6 +27,8 @@ def write_synthetic_video(
     g = 0.6  # gravity → bounces
     for _ in range(n_frames):
         frame = np.zeros((h, w, 3), dtype=np.uint8)
+        if score is not None:
+            render_scoreboard(frame, score[0], score[1])
         vy += g
         x += vx
         y += vy

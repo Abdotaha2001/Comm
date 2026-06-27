@@ -159,6 +159,7 @@ class MatchRead(BaseModel):
     player1_id: Optional[str] = None
     player2_id: Optional[str] = None
     is_doubles: int = 0
+    score: Optional[dict] = None
     rallies: List[RallyRead] = []
     model_config = ConfigDict(from_attributes=True)
 
