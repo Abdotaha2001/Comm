@@ -158,3 +158,55 @@ class Event(Base):
     position = Column(JSON)
     confidence = Column(Float)
     provenance = Column(JSON)
+
+
+class PlayerProfile(Base):
+    __tablename__ = "player_profiles"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    player_id = Column(String(36), ForeignKey("players.id"), nullable=False)
+    version = Column(Integer, nullable=False)
+    style_class = Column(String)
+    aggregated_stats = Column(JSON)
+    strengths = Column(JSON)
+    weaknesses = Column(JSON)
+    source_video_ids = Column(JSON)
+    confidence = Column(Float)
+    created_at = Column(DateTime, default=_now)
+
+
+class OpponentDossier(Base):
+    __tablename__ = "opponent_dossiers"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    org_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    subject_player_id = Column(String(36), ForeignKey("players.id"), nullable=False)
+    opponent_player_id = Column(String(36), ForeignKey("players.id"))
+    opponent_ref = Column(String)
+    footage_count = Column(Integer, nullable=False, default=0)
+    style_class = Column(String)
+    summary = Column(JSON)
+    confidence = Column(Float)
+    created_at = Column(DateTime, default=_now)
+
+
+class Matchup(Base):
+    __tablename__ = "matchups"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    org_id = Column(String(36), ForeignKey("organizations.id"), nullable=False)
+    my_player_id = Column(String(36), ForeignKey("players.id"), nullable=False)
+    opponent_dossier_id = Column(String(36), ForeignKey("opponent_dossiers.id"))
+    h2h = Column(JSON)
+    predicted_winprob = Column(Float)
+    confidence = Column(Float)
+    created_at = Column(DateTime, default=_now)
+
+
+class GamePlan(Base):
+    __tablename__ = "game_plans"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    matchup_id = Column(String(36), ForeignKey("matchups.id"), nullable=False)
+    plan = Column(JSON)
+    training_block = Column(JSON)
+    report_key = Column(String)
+    status = Column(String, nullable=False, default="draft")
+    confidence = Column(Float)
+    created_at = Column(DateTime, default=_now)

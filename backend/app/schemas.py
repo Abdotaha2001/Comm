@@ -161,3 +161,62 @@ class MatchRead(BaseModel):
     is_doubles: int = 0
     rallies: List[RallyRead] = []
     model_config = ConfigDict(from_attributes=True)
+
+
+# ── Intelligence: profiles / opponents / matchups / game plans ──
+class ProfileRead(BaseModel):
+    id: str
+    player_id: str
+    version: int
+    style_class: Optional[str] = None
+    aggregated_stats: Optional[dict] = None
+    strengths: Optional[list] = None
+    weaknesses: Optional[list] = None
+    confidence: Optional[float] = None
+    data_note: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OpponentCreate(BaseModel):
+    subject_player_id: str
+    opponent_player_id: Optional[str] = None
+    opponent_ref: Optional[str] = None
+    video_ids: Optional[List[str]] = None
+
+
+class OpponentRead(BaseModel):
+    id: str
+    subject_player_id: str
+    opponent_player_id: Optional[str] = None
+    opponent_ref: Optional[str] = None
+    footage_count: int
+    style_class: Optional[str] = None
+    summary: Optional[dict] = None
+    confidence: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MatchupCreate(BaseModel):
+    my_player_id: str
+    opponent_dossier_id: str
+
+
+class MatchupRead(BaseModel):
+    id: str
+    my_player_id: str
+    opponent_dossier_id: Optional[str] = None
+    predicted_winprob: Optional[float] = None
+    confidence: Optional[float] = None
+    h2h: Optional[dict] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GamePlanRead(BaseModel):
+    id: str
+    matchup_id: str
+    status: str
+    plan: Optional[dict] = None
+    training_block: Optional[list] = None
+    confidence: Optional[float] = None
+    data_note: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
