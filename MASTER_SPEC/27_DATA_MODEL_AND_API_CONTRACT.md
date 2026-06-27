@@ -103,7 +103,16 @@ organizations ─┬─< users
 - **Coaching storage:** `drills` catalog + `training_plans` (periodized; Parts 08, 22).
 - **Audit & lifecycle:** `players.status/archived_at/created_by` + auto `updated_at` trigger.
 - **API hygiene:** `GET /v1/healthz`, `Idempotency-Key` on plan generation, `401/422/429` responses, `WebhookEvent` schema.
-- **Deferred (post-P1):** Postgres RLS policies, tournaments/teams, refresh-token rotation.
+
+### v0.2 additions (second review)
+- **Webhooks plumbing:** `webhooks` table + `GET/POST /v1/webhooks`, `DELETE /v1/webhooks/{id}` (the payload schema alone wasn't subscribable).
+- **Audit trail:** `audit_log` table (who/what/when) for RBAC accountability (Part 15).
+- **RBAC errors:** `403 Forbidden` response.
+- **Coaching API:** `drills` + `training_plans` now have endpoints (`/v1/drills`, `/v1/players/{id}/training-plans`).
+- **Lifecycle:** `DELETE /v1/players/{id}` (archive/soft-delete).
+- **Match-level events:** `events.match_id` (+ nullable `rally_id`) for timeouts/set-changes/scoreboard reads; new event types `timeout/set_change/score_read`.
+- **Org settings:** `organizations.settings` jsonb (locale, retention_days).
+- **Deferred (post-P1):** Postgres RLS policies, tournaments/teams, refresh-token rotation, full cursor pagination.
 
 ---
 

@@ -122,6 +122,12 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Player' }
+    delete:
+      tags: [players]
+      summary: Archive a player (soft delete)
+      responses:
+        '204': { description: archived }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /players/{id}/consents:
     parameters:
@@ -304,6 +310,101 @@ paths:
       responses:
         '201': { description: recorded }
 
+  /players/{id}/training-plans:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [coaching]
+      summary: List a player's training plans
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TrainingPlan' }
+    post:
+      tags: [coaching]
+      summary: Create a periodized training plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrainingPlanCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrainingPlan' }
+
+  /drills:
+    get:
+      tags: [coaching]
+      summary: List the drill catalog
+      parameters:
+        - { name: targets_skill, in: query, schema: { type: string } }
+        - { name: level, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Drill' }
+    post:
+      tags: [coaching]
+      summary: Add a drill to the catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DrillCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Drill' }
+
+  /webhooks:
+    get:
+      tags: [system]
+      summary: List webhook subscriptions
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Webhook' }
+    post:
+      tags: [system]
+      summary: Subscribe to events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WebhookCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webhook' }
+
+  /webhooks/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [system]
+      summary: Delete a webhook subscription
+      responses:
+        '204': { description: deleted }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -319,6 +420,11 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
     Unauthorized:
       description: missing/invalid credentials
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: insufficient role/permissions (RBAC)
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -604,3 +710,57 @@ components:
         event: { type: string, enum: [analysis.completed, gameplan.ready] }
         occurred_at: { type: string, format: date-time }
         data: { type: object, additionalProperties: true }
+
+    WebhookCreate:
+      type: object
+      required: [url, events]
+      properties:
+        url: { type: string, format: uri }
+        events:
+          type: array
+          items: { type: string, enum: [analysis.completed, gameplan.ready] }
+
+    Webhook:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        events: { type: array, items: { type: string } }
+        active: { type: boolean }
+
+    DrillCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        targets_skill: { type: string }
+        structure: { type: string, enum: [regular, semi_random, random] }
+        multiball: { type: boolean }
+        mode: { type: string, enum: [solo, partner, robot] }
+        level: { type: string, enum: [beginner, intermediate, advanced, elite] }
+        phase: { type: string, enum: [off_season, pre_season, in_season] }
+        description: { type: string }
+
+    Drill:
+      allOf:
+        - { $ref: '#/components/schemas/DrillCreate' }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+
+    TrainingPlanCreate:
+      type: object
+      required: [horizon]
+      properties:
+        horizon: { type: string, enum: [daily, weekly, monthly, yearly, olympic_cycle] }
+        plan: { type: object, additionalProperties: true }
+        source_profile_id: { type: string, format: uuid }
+
+    TrainingPlan:
+      allOf:
+        - { $ref: '#/components/schemas/TrainingPlanCreate' }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            player_id: { type: string, format: uuid }
+            confidence: { type: number, minimum: 0, maximum: 1 }

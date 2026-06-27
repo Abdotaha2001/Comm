@@ -19,6 +19,7 @@ CREATE TABLE organizations (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name        text NOT NULL,
     type        text NOT NULL CHECK (type IN ('federation','club','academy','individual')),
+    settings    jsonb NOT NULL DEFAULT '{}'::jsonb,   -- locale, retention_days, default flags (Part 15)
     created_at  timestamptz NOT NULL DEFAULT now()
 );
 
@@ -209,16 +210,21 @@ CREATE INDEX idx_shots_rally ON shots(rally_id);
 
 CREATE TABLE events (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    rally_id    uuid NOT NULL REFERENCES rallies(id) ON DELETE CASCADE,
-    type        text NOT NULL CHECK (type IN ('bounce','net','hit','serve','point','let','violation')),
+    rally_id    uuid REFERENCES rallies(id) ON DELETE CASCADE,        -- null for match-level events
+    match_id    uuid REFERENCES matches(id) ON DELETE CASCADE,        -- timeouts, set changes, scoreboard reads
+    type        text NOT NULL CHECK (type IN
+                  ('bounce','net','hit','serve','point','let','violation','timeout','set_change','score_read')),
     frame       int,
     ts_ms       bigint,
     side        text,             -- near/far/left/right
     position    jsonb,            -- {x,y} image or {tx,ty} table coords
     confidence  numeric(4,3) CHECK (confidence BETWEEN 0 AND 1),
-    provenance  jsonb
+    provenance  jsonb,
+    CHECK (rally_id IS NOT NULL OR match_id IS NOT NULL)
 );
 CREATE INDEX idx_events_rally ON events(rally_id);
+CREATE INDEX idx_events_match ON events(match_id);
+CREATE INDEX idx_events_type ON events(type);
 
 -- ─────────────────────────────────────────────────────────────
 -- Aggregated profile (versioned, append-only)
@@ -338,5 +344,39 @@ CREATE TABLE training_plans (
     created_at      timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_trainingplans_player ON training_plans(player_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- Webhook subscriptions (tenant-registered) + delivery secret
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE webhooks (
+    id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id      uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    url         text NOT NULL,
+    secret      text NOT NULL,                 -- HMAC signing secret
+    events      text[] NOT NULL DEFAULT '{}',  -- e.g. {analysis.completed, gameplan.ready}
+    active      boolean NOT NULL DEFAULT true,
+    created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_webhooks_org ON webhooks(org_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- Audit trail (who did what) — RBAC accountability (MASTER_SPEC Part 15)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE audit_log (
+    id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id      uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id     uuid REFERENCES users(id) ON DELETE SET NULL,
+    action      text NOT NULL,                 -- create/update/delete/generate/login...
+    entity      text NOT NULL,                 -- table/resource name
+    entity_id   uuid,
+    meta        jsonb,
+    at          timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_audit_org_at ON audit_log(org_id, at);
+CREATE INDEX idx_audit_entity ON audit_log(entity, entity_id);
+
+-- A few additional FK indexes for hot paths
+CREATE INDEX idx_shots_player ON shots(player_id);
+CREATE INDEX idx_outcomes_match ON plan_outcomes(match_id);
 
 COMMIT;
