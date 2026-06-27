@@ -52,4 +52,4 @@
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `34_ENGINEERING_CONVENTIONS.md`**
