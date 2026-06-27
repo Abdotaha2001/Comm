@@ -64,4 +64,4 @@ GDPR (EU athletes) · child-safeguarding policy (academies) · anti-doping data 
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `32_PRODUCT_UX_AND_USER_JOURNEYS.md`**
