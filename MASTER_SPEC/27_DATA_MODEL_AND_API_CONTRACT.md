@@ -116,4 +116,4 @@ organizations ─┬─< users
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `28_ONTOLOGY_AND_GLOSSARY.md`**

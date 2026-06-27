@@ -43,6 +43,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 25 | `25_ANATOMY_AND_MOVEMENT_DYNAMICS.md` | Anatomy, kinetic chain, joint actions & full-body stroke biomechanics |
 | 26 | `26_EXISTING_ASSETS_PRETRAINED_AND_DATASETS.md` | ⭐ Reuse map: open pretrained models, datasets & repos (TTNet/TrackNet/SpinDOE/TTStroke-21…) |
 | 27 | `27_DATA_MODEL_AND_API_CONTRACT.md` | 🔧 Build artifact: DB schema + REST API + reliability envelope (→ `schema/`, `api/`) |
+| 28 | `28_ONTOLOGY_AND_GLOSSARY.md` | EN↔AR controlled vocabulary: entity/event taxonomy + full bilingual term glossary |
 
 ---
 
