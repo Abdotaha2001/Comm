@@ -51,9 +51,40 @@ When set, the platform **adapts**:
 | Class-11 coaching | cognitive-load-aware plans: pattern recognition, decision speed, simplified tactics |
 | Inclusive talent ID | maturation- **and** impairment-adjusted (Part 23) — never compare across classes |
 
+## G. Class-by-class detail (the per-class reference label set)
+| Class | Group | Defining function |
+|-------|-------|-------------------|
+| **1** | WC | **No sitting balance**, **severely affected playing arm** (spinal-cord lesion / polio) |
+| **2** | WC | No sitting balance; playing arm **less affected** than Class 1 |
+| **3** | WC | No sitting balance (upper trunk may show activity); **near-normal arms** (slight playing-hand loss, no real effect); non-playing arm holds trunk |
+| **4** | WC | **Sitting balance exists** but not optimal (no pelvic anchorage) |
+| **5** | WC | **Normal trunk-muscle function** (best wheelchair class) |
+| **6** | ST | **Severe impairment of legs AND arms** |
+| **7** | ST | Very severe leg impairment (poor balance), or severe-moderate playing-arm, or a milder arms+legs combo than C6 |
+| **8** | ST | Moderate leg impairment, or moderate playing-arm, or moderate CP / hemiplegia / diplegia with a good playing arm |
+| **9** | ST | Mild impairment of legs or playing arm, or moderate impairment of the non-playing arm |
+| **10** | ST | **Very mild** leg or playing-arm impairment, or severe-moderate non-playing-arm, or moderate trunk |
+| **11** | ID | **Intellectual impairment** meeting sport-specific criteria (cognition, not physical) |
+
+> WC = wheelchair (1–5) · ST = standing (6–10) · ID = intellectual (11). These per-class descriptors seed class-aware expectations in the profile (§E) and the matchup logic.
+
+## H. Para doubles rules
+- **Wheelchair pair:** server serves → receiver returns → **thereafter either partner may return** (no strict alternation). But if **any part of a wheelchair protrudes beyond the imaginary extension of the table's centre line**, the point goes to the opponents.
+- **Mixed pair (one standing + one wheelchair):** same return freedom after serve+return, but **each player must stay in their own half** of the court.
+
+## I. Classification status & integrity
+- Status codes: **N (New)** · **R (Review)** · **C (Confirmed)**.
+- A **Confirmed** classification has **no protest procedure** — only a documented request to the federation can trigger an ITTF-initiated protest.
+- **Intentional misrepresentation** of ability is an integrity offence → sanctions. (Relevant to the platform's integrity monitoring, Part 15.)
+
+## J. Adaptive equipment & example conditions
+- **Adaptive equipment:** a player who **cannot grip** may have the **racket strapped/bandaged to the hand** (permitted); serving adaptations for those who cannot do a standard ball-toss.
+- **Example underlying conditions** (mapped to IPC types): spinal-cord injury / polio (impaired muscle power), **cerebral palsy** (hypertonia/ataxia/athetosis), amputation (limb deficiency), **dwarfism** (short stature), "**Les Autres**" (other locomotor conditions, e.g. MS, muscular dystrophy, arthrogryposis).
+- **Deaflympics:** Deaf athletes compete in a **separate** stream (Deaflympics) — hearing impairment is **not** a Paralympic/Para-TT class.
+
 ## Sources
 - [Para table tennis — Wikipedia](https://en.wikipedia.org/wiki/Para_table_tennis) · [Para-TT classification breakdown — Paralympic.org](https://www.paralympic.org/news/para-table-tennis-classification-breakdown) · [ITTF Para classification](https://www.ittf.com/para-table-tennis-classification/)
-- [IPC Classification & eligible impairment types](https://www.paralympic.org/classification) · [ITTF PTT Rules & Regulations (PDF)](http://www.ipttc.org/rules/ITTF-PTT-Rules-and-Regulations.8th-edition.feb.2010-update.pdf)
+- [IPC Classification & eligible impairment types](https://www.paralympic.org/classification) · [ITTF PTT Rules & Regulations (PDF)](http://www.ipttc.org/rules/ITTF-PTT-Rules-and-Regulations.8th-edition.feb.2010-update.pdf) · [Para classification process — USATT](https://www.usatt.org/athlete-resources/para-classification)
 
 ---
 
