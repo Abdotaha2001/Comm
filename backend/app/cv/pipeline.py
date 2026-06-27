@@ -12,6 +12,7 @@ import cv2
 from .detector import BallDetector
 from .opencv_detector import OpenCVBallDetector
 from .scoreboard import read_scoreboard
+from .spin import gravity_from_tracks, rally_spin
 
 MAX_GAP = 8  # frames of no-detection that split rallies
 
@@ -70,6 +71,9 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
     if current:
         rallies.append(current)
 
+    # Gravity reference (median ballistic accel) for markerless spin estimation.
+    gravity_px = gravity_from_tracks([[(t[0], t[1], t[2]) for t in seg] for seg in rallies])
+
     out_rallies = []
     for ri, seg in enumerate(rallies):
         shots, events, shot_idx = [], [], 0
@@ -115,11 +119,17 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
         start_f, end_f = seg[0][0], seg[-1][0]
         duration = round((end_f - start_f) / max(fps, 1.0), 2)
         quality = round(min(1.0, (len(shots) * 0.2 + duration / 15.0)) * 100, 1)
+        spin = rally_spin([(t[0], t[1], t[2]) for t in seg], gravity_px)
+        if spin["spin_type"] != "no_spin":
+            for s in shots:
+                s["spin_type"] = spin["spin_type"]
+                s["provenance"]["spin_confidence"] = spin["confidence"]
         out_rallies.append({
             "idx": ri, "start_frame": start_f, "end_frame": end_f,
             "start_ms": _ms(start_f, fps), "end_ms": _ms(end_f, fps),
             "duration_sec": duration, "quality": quality,
             "confidence": round(mean_conf, 3),
+            "spin": spin,
             "shots": shots, "events": events,
         })
 
