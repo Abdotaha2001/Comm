@@ -68,4 +68,4 @@ This is the single most valuable coaching feature: **analysis that prescribes, a
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `23_ATHLETE_DEVELOPMENT_PHYSICAL_AND_MENTAL.md`**
