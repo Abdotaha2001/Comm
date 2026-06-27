@@ -1,0 +1,458 @@
+openapi: 3.1.0
+info:
+  title: TT-OS API
+  version: 0.1.0
+  description: >
+    Core API for the TT-OS table-tennis platform (MASTER_SPEC Part 27 / BUILD_ORDER #3).
+    Covers the P1 flagship MVP: players -> video analysis -> aggregated profile ->
+    opponent dossier -> matchup -> "how to beat them" game plan.
+    Every measured value is wrapped in a ReliabilityEnvelope (MASTER_SPEC Part 10).
+servers:
+  - url: https://api.tt-os.example/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: players
+  - name: videos
+  - name: analysis
+  - name: profiles
+  - name: matchups
+
+paths:
+  /players:
+    post:
+      tags: [players]
+      summary: Create a player (pro / junior / para)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlayerCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Player' }
+        '400': { $ref: '#/components/responses/Error' }
+    get:
+      tags: [players]
+      summary: List players (org-scoped)
+      parameters:
+        - { name: type, in: query, schema: { type: string, enum: [pro, junior] } }
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Player' }
+
+  /players/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [players]
+      summary: Get a player
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Player' }
+        '404': { $ref: '#/components/responses/Error' }
+    patch:
+      tags: [players]
+      summary: Update a player (e.g. assign a disability/class or equipment)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlayerUpdate' }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Player' }
+
+  /players/{id}/videos:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [videos]
+      summary: Register a video for a player (returns an upload target for source=upload)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VideoCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Video' }
+
+  /videos/{id}/analyze:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [analysis]
+      summary: Enqueue an analysis run for a video
+      responses:
+        '202':
+          description: accepted (queued)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AnalysisRun' }
+
+  /analysis-runs/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [analysis]
+      summary: Get analysis-run status + reliability
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AnalysisRun' }
+
+  /matches/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [analysis]
+      summary: Get full match results (rallies/shots/events embedded)
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Match' }
+
+  /players/{id}/profile:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [profiles]
+      summary: Get the latest aggregated profile
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlayerProfile' }
+    post:
+      tags: [profiles]
+      summary: Rebuild the aggregated profile from the player's videos
+      responses:
+        '202': { description: rebuild queued }
+
+  /opponents:
+    post:
+      tags: [matchups]
+      summary: Create an opponent dossier (from a player ref or sent videos)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OpponentCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OpponentDossier' }
+
+  /matchups:
+    post:
+      tags: [matchups]
+      summary: Create a matchup (my player vs an opponent dossier)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [my_player_id, opponent_dossier_id]
+              properties:
+                my_player_id: { type: string, format: uuid }
+                opponent_dossier_id: { type: string, format: uuid }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Matchup' }
+
+  /matchups/{id}/game-plan:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [matchups]
+      summary: Generate the "how to beat them" game plan
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GamePlan' }
+
+  /game-plans/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [matchups]
+      summary: Get a game plan
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GamePlan' }
+
+  /game-plans/{id}/outcome:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [matchups]
+      summary: Record whether the plan worked (efficacy loop)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                match_id: { type: string, format: uuid }
+                actual_result: { type: string }
+                adherence: { type: number, minimum: 0, maximum: 1 }
+                effectiveness: { type: number, minimum: 0, maximum: 1 }
+                notes: { type: string }
+      responses:
+        '201': { description: recorded }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Error:
+      description: error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+    ReliabilityEnvelope:
+      type: object
+      description: Wraps any measured value with calibrated confidence + provenance (Part 10).
+      required: [status]
+      properties:
+        value: {}
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        ci:
+          type: array
+          items: { type: number }
+          minItems: 2
+          maxItems: 2
+        tier: { type: string, enum: [t1, t2, t3] }
+        source: { type: string }
+        status: { type: string, enum: [ok, abstain] }
+
+    PlayerCreate:
+      type: object
+      required: [full_name]
+      properties:
+        full_name: { type: string }
+        type: { type: string, enum: [pro, junior], default: pro }
+        handedness: { type: string, enum: [left, right, unknown], default: unknown }
+        grip:
+          type: string
+          enum: [shakehand, penhold_chinese, penhold_japanese, seemiller, other, unknown]
+          default: unknown
+        date_of_birth: { type: string, format: date }
+        sex: { type: string, enum: [m, f, x] }
+        country: { type: string }
+        para_class: { type: integer, minimum: 1, maximum: 11, nullable: true }
+        impairment_type:
+          type: string
+          nullable: true
+          enum: [impaired_muscle_power, impaired_passive_rom, limb_deficiency, leg_length_difference,
+                 short_stature, hypertonia, ataxia, athetosis, intellectual]
+        mobility_mode: { type: string, enum: [standing, wheelchair, na], default: na }
+        disability_notes: { type: string }
+        maturation_status: { type: string, enum: [early, average, late, unknown] }
+
+    PlayerUpdate:
+      allOf:
+        - { $ref: '#/components/schemas/PlayerCreate' }
+      description: Any subset of PlayerCreate fields (partial update).
+
+    Player:
+      allOf:
+        - { $ref: '#/components/schemas/PlayerCreate' }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            org_id: { type: string, format: uuid }
+            created_at: { type: string, format: date-time }
+
+    VideoCreate:
+      type: object
+      required: [source]
+      properties:
+        source: { type: string, enum: [upload, drive, url, stream] }
+        url: { type: string, description: required when source=url|drive }
+        capture_tier: { type: string, enum: [t1, t2, t3], default: t1 }
+
+    Video:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        player_id: { type: string, format: uuid }
+        source: { type: string }
+        status: { type: string, enum: [uploaded, queued, processing, done, failed] }
+        capture_tier: { type: string, enum: [t1, t2, t3] }
+        upload_url: { type: string, description: presigned PUT target when source=upload }
+        fps: { type: number }
+        duration_sec: { type: number }
+
+    AnalysisRun:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        video_id: { type: string, format: uuid }
+        status: { type: string, enum: [queued, processing, done, failed] }
+        reliability_index: { type: number, minimum: 0, maximum: 1 }
+        input_quality: { type: object, additionalProperties: true }
+        model_versions: { type: object, additionalProperties: true }
+        match_id: { type: string, format: uuid, nullable: true }
+
+    Match:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        player1_id: { type: string, format: uuid }
+        player2_id: { type: string, format: uuid }
+        format: { type: string, enum: [bo3, bo5, bo7] }
+        is_doubles: { type: boolean }
+        score: { type: object, additionalProperties: true }
+        rallies:
+          type: array
+          items: { $ref: '#/components/schemas/Rally' }
+
+    Rally:
+      type: object
+      properties:
+        idx: { type: integer }
+        server_player_id: { type: string, format: uuid }
+        winner_player_id: { type: string, format: uuid }
+        reason: { type: string }
+        duration_sec: { type: number }
+        quality: { type: number }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        shots:
+          type: array
+          items: { $ref: '#/components/schemas/Shot' }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/Event' }
+
+    Shot:
+      type: object
+      properties:
+        idx: { type: integer }
+        player_id: { type: string, format: uuid }
+        ts_ms: { type: integer }
+        stroke_type: { type: string }
+        spin_type:
+          type: string
+          enum: [topspin, backspin, sidespin_left, sidespin_right, corkspin, mixed, no_spin]
+        wing: { type: string, enum: [fh, bh] }
+        speed:
+          $ref: '#/components/schemas/ReliabilityEnvelope'
+        confidence: { type: number, minimum: 0, maximum: 1 }
+
+    Event:
+      type: object
+      properties:
+        type: { type: string, enum: [bounce, net, hit, serve, point, let, violation] }
+        ts_ms: { type: integer }
+        side: { type: string }
+        position: { type: object, additionalProperties: true }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+
+    PlayerProfile:
+      type: object
+      properties:
+        player_id: { type: string, format: uuid }
+        version: { type: integer }
+        style_class:
+          type: string
+          enum: [fh_looper, two_winged_attacker, counter_driver, all_rounder, chopper,
+                 penhold_looper, penhold_rpb, short_pips_hitter, combination_chopper]
+        aggregated_stats: { type: object, additionalProperties: true }
+        strengths: { type: array, items: { type: object, additionalProperties: true } }
+        weaknesses: { type: array, items: { type: object, additionalProperties: true } }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+
+    OpponentCreate:
+      type: object
+      required: [subject_player_id]
+      properties:
+        subject_player_id: { type: string, format: uuid }
+        opponent_player_id: { type: string, format: uuid, nullable: true }
+        opponent_ref: { type: string, description: free name when opponent not in DB }
+        video_ids:
+          type: array
+          items: { type: string, format: uuid }
+
+    OpponentDossier:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        subject_player_id: { type: string, format: uuid }
+        opponent_ref: { type: string }
+        footage_count: { type: integer }
+        style_class: { type: string }
+        summary: { type: object, additionalProperties: true }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+
+    Matchup:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        my_player_id: { type: string, format: uuid }
+        opponent_dossier_id: { type: string, format: uuid }
+        predicted_winprob:
+          $ref: '#/components/schemas/ReliabilityEnvelope'
+        confidence: { type: number, minimum: 0, maximum: 1 }
+
+    GamePlan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        matchup_id: { type: string, format: uuid }
+        status: { type: string, enum: [draft, final] }
+        plan: { type: object, additionalProperties: true }
+        training_block:
+          type: array
+          items: { type: object, additionalProperties: true }
+        report_key: { type: string }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        data_note: { type: string }
