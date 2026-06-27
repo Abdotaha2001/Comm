@@ -55,4 +55,4 @@ Agility · leg strength & explosive power · change-of-direction · speed · gri
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `24_PARA_TABLE_TENNIS_CLASSIFICATION.md`**
