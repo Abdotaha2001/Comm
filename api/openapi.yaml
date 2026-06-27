@@ -19,6 +19,51 @@ tags:
   - name: matchups
 
 paths:
+  /healthz:
+    get:
+      tags: [system]
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Exchange email + password for a JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthLogin' }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Current authenticated user
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /players:
     post:
       tags: [players]
@@ -77,6 +122,25 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Player' }
+
+  /players/{id}/consents:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [players]
+      summary: Record a consent (guardian consent for minors / para / GDPR)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConsentCreate' }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consent' }
+        '422': { $ref: '#/components/responses/ValidationError' }
 
   /players/{id}/videos:
     parameters:
@@ -196,12 +260,15 @@ paths:
     post:
       tags: [matchups]
       summary: Generate the "how to beat them" game plan
+      parameters:
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string } }
       responses:
         '201':
           description: created
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GamePlan' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /game-plans/{id}:
     parameters:
@@ -247,6 +314,23 @@ components:
   responses:
     Error:
       description: error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: missing/invalid credentials
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: request failed validation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: too many requests
+      headers:
+        Retry-After: { schema: { type: integer }, description: seconds }
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -349,12 +433,17 @@ components:
         id: { type: string, format: uuid }
         player1_id: { type: string, format: uuid }
         player2_id: { type: string, format: uuid }
+        player3_id: { type: string, format: uuid, nullable: true, description: doubles }
+        player4_id: { type: string, format: uuid, nullable: true, description: doubles }
         format: { type: string, enum: [bo3, bo5, bo7] }
         is_doubles: { type: boolean }
         score: { type: object, additionalProperties: true }
         rallies:
           type: array
           items: { $ref: '#/components/schemas/Rally' }
+        artifacts:
+          type: array
+          items: { $ref: '#/components/schemas/Artifact' }
 
     Rally:
       type: object
@@ -456,3 +545,62 @@ components:
         report_key: { type: string }
         confidence: { type: number, minimum: 0, maximum: 1 }
         data_note: { type: string }
+
+    AuthLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, example: bearer }
+        expires_in: { type: integer, example: 3600 }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        org_id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        full_name: { type: string }
+        role: { type: string, enum: [admin, coach, player, umpire, medical, scout] }
+
+    ConsentCreate:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [data_processing, video_storage, image_rights, medical] }
+        granted: { type: boolean, default: true }
+        by_guardian: { type: boolean, default: false, description: true when the player is a minor }
+        guardian_name: { type: string }
+        scope: { type: string }
+        expires_at: { type: string, format: date-time }
+
+    Consent:
+      allOf:
+        - { $ref: '#/components/schemas/ConsentCreate' }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            player_id: { type: string, format: uuid }
+            granted_at: { type: string, format: date-time }
+
+    Artifact:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [video, chart, clip, report, results_json] }
+        storage_key: { type: string }
+        meta: { type: object, additionalProperties: true }
+
+    WebhookEvent:
+      type: object
+      description: Payload POSTed to a tenant's webhook URL.
+      properties:
+        event: { type: string, enum: [analysis.completed, gameplan.ready] }
+        occurred_at: { type: string, format: date-time }
+        data: { type: object, additionalProperties: true }

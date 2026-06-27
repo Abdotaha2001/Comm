@@ -95,6 +95,16 @@ organizations ─┬─< users
 - Profiles are **append-only versioned** (never overwrite) → longitudinal history (Part 04/17).
 - Para players: `mobility_mode='wheelchair'` switches movement scoring & service-legality rules (Parts 24, 09).
 
+## 5. Hardening added in v0.1 (after review)
+- **Auth:** `users.password_hash/status/last_login_at` + `api_keys` table; `POST /v1/auth/login`, `GET /v1/auth/me`.
+- **Consent & privacy (minors/para/GDPR):** `consents` table + `POST /v1/players/{id}/consents` (guardian consent flag).
+- **Doubles:** `matches.player3_id/player4_id` + `Match.player3_id/player4_id`.
+- **Generated outputs:** `artifacts` table (video/chart/clip/report/results_json) surfaced on `Match.artifacts`.
+- **Coaching storage:** `drills` catalog + `training_plans` (periodized; Parts 08, 22).
+- **Audit & lifecycle:** `players.status/archived_at/created_by` + auto `updated_at` trigger.
+- **API hygiene:** `GET /v1/healthz`, `Idempotency-Key` on plan generation, `401/422/429` responses, `WebhookEvent` schema.
+- **Deferred (post-P1):** Postgres RLS policies, tournaments/teams, refresh-token rotation.
+
 ---
 
 ➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*

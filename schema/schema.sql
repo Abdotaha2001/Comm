@@ -7,6 +7,11 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;  -- gen_random_uuid()
 
+-- Auto-maintain updated_at on UPDATE
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END;
+$$ LANGUAGE plpgsql;
+
 -- ─────────────────────────────────────────────────────────────
 -- Tenancy & auth
 -- ─────────────────────────────────────────────────────────────
@@ -20,12 +25,28 @@ CREATE TABLE organizations (
 CREATE TABLE users (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id      uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    email       text NOT NULL UNIQUE,
-    full_name   text,
-    role        text NOT NULL CHECK (role IN ('admin','coach','player','umpire','medical','scout')),
-    created_at  timestamptz NOT NULL DEFAULT now()
+    email         text NOT NULL UNIQUE,
+    full_name     text,
+    role          text NOT NULL CHECK (role IN ('admin','coach','player','umpire','medical','scout')),
+    password_hash text,                                  -- null when using an external IdP
+    status        text NOT NULL DEFAULT 'active' CHECK (status IN ('active','disabled')),
+    last_login_at timestamptz,
+    created_at    timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_users_org ON users(org_id);
+
+-- Service / programmatic auth (hashed API keys)
+CREATE TABLE api_keys (
+    id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id      uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name        text NOT NULL,
+    key_hash    text NOT NULL,
+    scopes      text[] NOT NULL DEFAULT '{}',
+    last_used_at timestamptz,
+    revoked_at  timestamptz,
+    created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_apikeys_org ON api_keys(org_id);
 
 -- ─────────────────────────────────────────────────────────────
 -- Players (pro / junior / para) + equipment
@@ -51,10 +72,32 @@ CREATE TABLE players (
     disability_notes  text,
     -- Talent (Part 23)
     maturation_status text CHECK (maturation_status IN ('early','average','late','unknown')),
+    -- lifecycle & audit
+    status            text NOT NULL DEFAULT 'active' CHECK (status IN ('active','archived')),
+    archived_at       timestamptz,
+    created_by        uuid REFERENCES users(id) ON DELETE SET NULL,
     created_at        timestamptz NOT NULL DEFAULT now(),
     updated_at        timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_players_org ON players(org_id);
+CREATE INDEX idx_players_para ON players(para_class) WHERE para_class IS NOT NULL;
+CREATE TRIGGER trg_players_updated BEFORE UPDATE ON players
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Consent & data governance (critical for juniors / para / minors — MASTER_SPEC Part 15)
+CREATE TABLE consents (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    player_id       uuid NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    type            text NOT NULL CHECK (type IN ('data_processing','video_storage','image_rights','medical')),
+    granted         boolean NOT NULL DEFAULT true,
+    by_guardian     boolean NOT NULL DEFAULT false,    -- true when the player is a minor
+    guardian_name   text,
+    scope           text,
+    granted_at      timestamptz NOT NULL DEFAULT now(),
+    expires_at      timestamptz,
+    revoked_at      timestamptz
+);
+CREATE INDEX idx_consents_player ON consents(player_id);
 
 CREATE TABLE player_equipment (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -117,6 +160,8 @@ CREATE TABLE matches (
     video_id         uuid NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
     player1_id       uuid REFERENCES players(id) ON DELETE SET NULL,
     player2_id       uuid REFERENCES players(id) ON DELETE SET NULL,
+    player3_id       uuid REFERENCES players(id) ON DELETE SET NULL,  -- doubles
+    player4_id       uuid REFERENCES players(id) ON DELETE SET NULL,  -- doubles
     score            jsonb,           -- {"sets": [...], "points": {...}}
     format           text CHECK (format IN ('bo3','bo5','bo7')),
     is_doubles       boolean NOT NULL DEFAULT false,
@@ -247,5 +292,51 @@ CREATE TABLE plan_outcomes (
     created_at    timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_outcomes_plan ON plan_outcomes(game_plan_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- Generated outputs (annotated video, charts, clips, reports, results.json)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE artifacts (
+    id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_run_id  uuid REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    match_id         uuid REFERENCES matches(id) ON DELETE CASCADE,
+    game_plan_id     uuid REFERENCES game_plans(id) ON DELETE CASCADE,
+    type             text NOT NULL CHECK (type IN ('video','chart','clip','report','results_json')),
+    storage_key      text NOT NULL,
+    meta             jsonb,
+    created_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_artifacts_run ON artifacts(analysis_run_id);
+CREATE INDEX idx_artifacts_match ON artifacts(match_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- Coaching: drill catalog + periodized training plans (MASTER_SPEC Parts 08, 22)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE drills (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id          uuid REFERENCES organizations(id) ON DELETE CASCADE,  -- null = global catalog
+    name            text NOT NULL,
+    targets_skill   text,                 -- stroke_type / footwork / etc. (Part 19)
+    structure       text CHECK (structure IN ('regular','semi_random','random')),
+    multiball       boolean NOT NULL DEFAULT false,
+    mode            text CHECK (mode IN ('solo','partner','robot')),
+    level           text CHECK (level IN ('beginner','intermediate','advanced','elite')),
+    phase           text CHECK (phase IN ('off_season','pre_season','in_season')),
+    description     text,
+    video_key       text,
+    created_at      timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_drills_org ON drills(org_id);
+
+CREATE TABLE training_plans (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    player_id       uuid NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    horizon         text NOT NULL CHECK (horizon IN ('daily','weekly','monthly','yearly','olympic_cycle')),
+    plan            jsonb NOT NULL DEFAULT '{}'::jsonb,    -- periodized blocks + prescribed drills
+    source_profile_id uuid REFERENCES player_profiles(id) ON DELETE SET NULL,
+    confidence      numeric(4,3) CHECK (confidence BETWEEN 0 AND 1),
+    created_at      timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_trainingplans_player ON training_plans(player_id);
 
 COMMIT;
