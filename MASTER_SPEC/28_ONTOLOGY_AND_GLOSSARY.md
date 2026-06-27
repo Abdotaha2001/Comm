@@ -5,7 +5,7 @@
 ## How to use
 - **Labeling/data:** annotators pick `canonical_id`s — never free text.
 - **i18n:** the UI renders `en` or `ar` (RTL) from the same `canonical_id`.
-- **Governance:** a new term is added **here first** (versioned), then used anywhere. This file is the controlled vocabulary.
+- **Governance:** a new term is added **here first** (versioned), then used anywhere. This file is the controlled vocabulary. **Vocabulary version: v0.2** (adds reason codes, operational enums, basic/scoring terms, abbreviations, units, synonyms; reconciled with Part 27 enums).
 
 ---
 
@@ -228,6 +228,87 @@ Grounds the Knowledge Graph (Part 11) and mirrors the data model (Part 27).
 | `matchup` | Matchup | المواجهة |
 
 ---
+
+### C13. Point-outcome reasons (`rallies.reason`)
+| canonical_id | EN | AR |
+|--------------|----|----|
+| `winner` | Clean winner | ضربة حاسمة |
+| `unforced_error` | Unforced error | خطأ غير قسري |
+| `missed_return` | Missed return | فشل الإرجاع |
+| `ball_out` | Ball out | الكرة خارج |
+| `net_fail` | Failed to clear net | لم تعبر الشبكة |
+| `double_bounce` | Double bounce | ارتداد مزدوج |
+| `service_fault` | Service fault | خطأ إرسال |
+| `edge_winner` | Edge-ball winner | كرة حافة كاسبة |
+| `timeout_call` | Timeout-based | بسبب الوقت المستقطع |
+
+### C14. Basic & scoring terms
+| canonical_id | EN | AR |
+|--------------|----|----|
+| `forehand` / `fh` | Forehand | الأمامية / فورهاند |
+| `backhand` / `bh` | Backhand | الخلفية / باكهاند |
+| `table` | Table | الطاولة |
+| `net` | Net | الشبكة |
+| `ball` | Ball | الكرة |
+| `racket` | Racket / bat | المضرب |
+| `serve_order` | Serve order | ترتيب الإرسال |
+| `server` / `receiver` | Server / receiver | المُرسِل / المُستقبِل |
+| `point` / `game` / `set` / `match` | Point / game / set / match | نقطة / لعبة / شوط / مباراة |
+| `win` / `loss` | Win / loss | فوز / خسارة |
+
+### C15. Operational enums (Part 27 value sets, bilingual)
+| field · value | EN | AR |
+|---------------|----|----|
+| `capture_tier`: `t1`/`t2`/`t3` | single-cam 2D / single-cam 3D-lift / multi-cam 3D | كاميرا واحدة 2D / مرفوعة 3D / متعددة 3D |
+| `mobility_mode`: `standing`/`wheelchair`/`na` | standing / wheelchair / n-a | وقوف / كرسي متحرك / غير منطبق |
+| `format`: `bo3`/`bo5`/`bo7` | best of 3 / 5 / 7 | أفضل من 3 / 5 / 7 |
+| `status`: `queued`/`processing`/`done`/`failed` | queued / processing / done / failed | في الطابور / قيد المعالجة / تم / فشل |
+| `role`: `admin`/`coach`/`player`/`umpire`/`medical`/`scout` | admin / coach / player / umpire / medical / scout | أدمن / مدرب / لاعب / حكم / طبي / كشّاف |
+| confidence level: `high`/`moderate`/`low` | high / moderate / low | عالية / متوسطة / منخفضة |
+| reliability `status`: `ok`/`abstain` | ok / abstain | موثوق / امتناع |
+| `drill.structure`: `regular`/`semi_random`/`random` | regular / semi-random / random | منتظم / شبه عشوائي / عشوائي |
+| `drill.phase`: `off_season`/`pre_season`/`in_season` | off / pre / in-season | خارج / قبل / أثناء الموسم |
+| `level`: `beginner`/`intermediate`/`advanced`/`elite` | beginner / intermediate / advanced / elite | مبتدئ / متوسط / متقدم / نخبة |
+| `consent.type`: `data_processing`/`video_storage`/`image_rights`/`medical` | data / video / image-rights / medical | معالجة بيانات / تخزين فيديو / حقوق صورة / طبي |
+| `artifact.type`: `video`/`chart`/`clip`/`report`/`results_json` | video / chart / clip / report / results.json | فيديو / رسم / مقطع / تقرير / نتائج |
+
+### C16. Abbreviations
+| Abbr | EN | AR |
+|------|----|----|
+| FH / BH | forehand / backhand | الأمامية / الخلفية |
+| RPB | reverse penhold backhand | الظهر العكسي لقبضة القلم |
+| OX | no-sponge rubber | مطاط بدون سفنجة |
+| ITTF | Int'l Table Tennis Federation | الاتحاد الدولي |
+| LARC | List of Approved Racket Coverings | قائمة المطاطات المعتمدة |
+| LTAD | Long-Term Athlete Development | التطوير طويل المدى |
+| PST | Psychological Skills Training | تدريب المهارات النفسية |
+| GRF / COM | ground reaction force / center of mass | قوة رد الأرض / مركز الكتلة |
+| SSC / ROM | stretch-shortening cycle / range of motion | دورة التمدد-التقصير / مدى الحركة |
+| RPM | revolutions per minute (spin) | لفة/دقيقة (دوران) |
+| ReID / OCR / KG | re-identification / OCR / knowledge graph | إعادة تعرّف / OCR / رسم معرفي |
+
+### C17. Units & measures
+| unit | EN | AR |
+|------|----|----|
+| `km_h` | km/h (speed) | كم/س |
+| `rps` / `rpm` | revolutions per sec/min (spin) | لفة/ث / لفة/د |
+| `mm` / `cm` / `m` | millimetre / cm / metre | مم / سم / م |
+| `fps` | frames per second | إطار/ث |
+| `ms` | millisecond | مللي ثانية |
+| `px` | pixel | بكسل |
+| `deg` | degree (angle) | درجة |
+| `mN` | millinewton (friction) | مللي نيوتن |
+
+### C18. Synonyms / aliases (map to the canonical_id)
+| alias | canonical_id |
+|-------|--------------|
+| chiquita | `banana_flick` |
+| underspin | `backspin` |
+| smooth / pips-in | `inverted` |
+| bat / paddle | `racket` |
+| ping pong | table tennis |
+| topspin attack | `loop` |
+| defender | `chopper` |
 
 ## D. Naming conventions
 - **canonical_id:** `snake_case`, ASCII, stable (never rename — deprecate instead).

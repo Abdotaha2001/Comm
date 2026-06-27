@@ -42,7 +42,7 @@ organizations ─┬─< users
 | `plan_outcomes` | did it work? | `actual_result`, `adherence`, `effectiveness` |
 
 ## 2. Controlled enums (grounded in the domain)
-- **stroke_type:** `serve_pendulum, serve_reverse_pendulum, serve_tomahawk, serve_reverse_tomahawk, serve_shovel, serve_backhand, serve_high_toss, serve_ghost, push_short, push_long, flick, banana_flick, strawberry_flick, drop_shot, drive, loop, hook_loop, fade_loop, counterloop, smash, block, punch_block, chop_block, chop, fish, lob, dig` (Part 19).
+- **stroke_type:** `serve_pendulum, serve_reverse_pendulum, serve_tomahawk, serve_reverse_tomahawk, serve_shovel, serve_backhand, serve_high_toss, serve_ghost, serve_hook, serve_windshield_wiper, push_short, push_long, flick, banana_flick, strawberry_flick, drop_shot, drive, loop, hook_loop, fade_loop, counterloop, smash, block, punch_block, chop_block, chop, fish, lob, dig` (Part 19 — must match glossary Part 28).
 - **spin_type:** `topspin, backspin, sidespin_left, sidespin_right, corkspin, mixed, no_spin`.
 - **wing:** `fh, bh`.
 - **style_class:** `fh_looper, two_winged_attacker, counter_driver, all_rounder, chopper, penhold_looper, penhold_rpb, short_pips_hitter, combination_chopper` (Part 19-B8).
