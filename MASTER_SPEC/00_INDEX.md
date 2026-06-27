@@ -50,6 +50,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 32 | `32_PRODUCT_UX_AND_USER_JOURNEYS.md` | Personas, core journeys, screen map, UX principles, screen→API map |
 | 33 | `33_COMPETITIVE_LANDSCAPE.md` | Existing products (Stupa/OSAI/Dartfish/SmartScorer), capability matrix, our wedge |
 | 34 | `34_ENGINEERING_CONVENTIONS.md` | Code/API/DB/test/CV/git conventions (quick-start in root `CLAUDE.md`) |
+| 35 | `35_HARDWARE_AND_CAPTURE_SOP.md` | Camera/lighting/calibration setup per tier + pre-session checklist + metadata |
 
 ---
 

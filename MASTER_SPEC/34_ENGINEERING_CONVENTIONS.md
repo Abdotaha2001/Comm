@@ -47,4 +47,4 @@
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
