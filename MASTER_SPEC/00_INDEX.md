@@ -53,6 +53,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 35 | `35_HARDWARE_AND_CAPTURE_SOP.md` | Camera/lighting/calibration setup per tier + pre-session checklist + metadata |
 | 36 | `36_RISK_REGISTER_AND_ASSUMPTIONS.md` | Living risk register (L/I/mitigation) + the assumptions we're betting on |
 | 37 | `37_DATA_MODEL_AND_API_CONTRACT_BUILD_SPEC.md` | 🔧 Authoritative backend build spec: domain model · schema · API/event contracts · traceability · governance (RFC-style; supersedes Part 27 for build) |
+| 38 | `38_ONTOLOGY_AND_GLOSSARY_CANONICAL.md` | 🔧 Authoritative ontology & controlled vocabulary: canonical_ids · entity/event/stroke/spin/pose/equipment/AI ontologies · KG relationships · EN↔AR glossary (184 terms; supersedes Part 28 for semantics; SoT `i18n/glossary.json`) |
 
 ---
 

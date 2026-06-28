@@ -680,4 +680,4 @@ This document, together with the artifacts in §Y, is the authoritative backend 
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `38_ONTOLOGY_AND_GLOSSARY_CANONICAL.md`**

@@ -1,151 +1,1110 @@
 {
-  "version": "0.2",
+  "version": "0.3",
   "note": "Machine-readable source of truth derived from MASTER_SPEC/28_ONTOLOGY_AND_GLOSSARY.md. canonical_id is the key; en/ar are display labels. Build en.json/ar.json with build.py.",
   "terms": [
-    {"id": "organization", "domain": "ontology", "en": "Organization", "ar": "جهة / مؤسسة"},
-    {"id": "user", "domain": "ontology", "en": "User", "ar": "مستخدم"},
-    {"id": "player", "domain": "ontology", "en": "Player", "ar": "لاعب"},
-    {"id": "coach", "domain": "ontology", "en": "Coach", "ar": "مدرب"},
-    {"id": "umpire", "domain": "ontology", "en": "Umpire", "ar": "حكم"},
-    {"id": "video", "domain": "ontology", "en": "Video", "ar": "فيديو"},
-    {"id": "match", "domain": "ontology", "en": "Match", "ar": "مباراة"},
-    {"id": "rally", "domain": "ontology", "en": "Rally / Point", "ar": "تبادُل / نقطة"},
-    {"id": "shot", "domain": "ontology", "en": "Shot / Stroke", "ar": "ضربة"},
-    {"id": "event", "domain": "ontology", "en": "Event", "ar": "حدث"},
-    {"id": "player_profile", "domain": "ontology", "en": "Player profile", "ar": "ملف اللاعب"},
-    {"id": "opponent_dossier", "domain": "ontology", "en": "Opponent dossier", "ar": "ملف الخصم"},
-    {"id": "matchup", "domain": "ontology", "en": "Matchup", "ar": "مواجهة"},
-    {"id": "game_plan", "domain": "ontology", "en": "Game plan", "ar": "خطة اللعب"},
-    {"id": "drill", "domain": "ontology", "en": "Drill", "ar": "تمرين"},
-    {"id": "training_plan", "domain": "ontology", "en": "Training plan", "ar": "خطة تدريب"},
-    {"id": "equipment", "domain": "ontology", "en": "Equipment", "ar": "عُدّة"},
-    {"id": "strength", "domain": "ontology", "en": "Strength", "ar": "نقطة قوة"},
-    {"id": "weakness", "domain": "ontology", "en": "Weakness", "ar": "نقطة ضعف"},
-    {"id": "injury", "domain": "ontology", "en": "Injury", "ar": "إصابة"},
-    {"id": "impairment", "domain": "ontology", "en": "Impairment", "ar": "إعاقة"},
-
-    {"id": "bounce", "domain": "event", "en": "Bounce", "ar": "ارتداد / نطّة"},
-    {"id": "net", "domain": "event", "en": "Net touch", "ar": "لمس الشبكة"},
-    {"id": "hit", "domain": "event", "en": "Hit / contact", "ar": "ضرب / تلامس"},
-    {"id": "serve", "domain": "event", "en": "Serve", "ar": "إرسال"},
-    {"id": "point", "domain": "event", "en": "Point", "ar": "نقطة"},
-    {"id": "let", "domain": "event", "en": "Let (replay)", "ar": "إعادة (ليت)"},
-    {"id": "violation", "domain": "event", "en": "Violation", "ar": "مخالفة"},
-    {"id": "timeout", "domain": "event", "en": "Timeout", "ar": "وقت مستقطع"},
-    {"id": "set_change", "domain": "event", "en": "Set change", "ar": "تغيير الشوط"},
-    {"id": "score_read", "domain": "event", "en": "Scoreboard read", "ar": "قراءة النتيجة"},
-
-    {"id": "serve_pendulum", "domain": "serve", "en": "Pendulum serve", "ar": "إرسال البندول"},
-    {"id": "serve_reverse_pendulum", "domain": "serve", "en": "Reverse pendulum", "ar": "البندول العكسي"},
-    {"id": "serve_tomahawk", "domain": "serve", "en": "Tomahawk serve", "ar": "إرسال التوماهوك"},
-    {"id": "serve_reverse_tomahawk", "domain": "serve", "en": "Reverse tomahawk", "ar": "التوماهوك العكسي"},
-    {"id": "serve_shovel", "domain": "serve", "en": "Shovel serve", "ar": "إرسال الجاروف"},
-    {"id": "serve_backhand", "domain": "serve", "en": "Backhand serve", "ar": "إرسال خلفي"},
-    {"id": "serve_high_toss", "domain": "serve", "en": "High-toss serve", "ar": "إرسال الرمية العالية"},
-    {"id": "serve_ghost", "domain": "serve", "en": "Ghost serve", "ar": "الإرسال الشبح"},
-    {"id": "serve_hook", "domain": "serve", "en": "Hook serve", "ar": "الإرسال الخطّافي"},
-    {"id": "serve_windshield_wiper", "domain": "serve", "en": "Windshield-wiper serve", "ar": "إرسال المسّاحة"},
-
-    {"id": "push_short", "domain": "stroke", "en": "Short push", "ar": "الدفع القصير"},
-    {"id": "push_long", "domain": "stroke", "en": "Long push", "ar": "الدفع الطويل"},
-    {"id": "flick", "domain": "stroke", "en": "Flick / flip", "ar": "الفليك"},
-    {"id": "banana_flick", "domain": "stroke", "en": "Banana flick / chiquita", "ar": "فليك الموزة / الشيكيتا"},
-    {"id": "strawberry_flick", "domain": "stroke", "en": "Strawberry flick", "ar": "فليك الفراولة"},
-    {"id": "drop_shot", "domain": "stroke", "en": "Drop shot", "ar": "الكرة القصيرة الخادعة"},
-    {"id": "drive", "domain": "stroke", "en": "Drive", "ar": "الدرايف"},
-    {"id": "loop", "domain": "stroke", "en": "Loop (topspin)", "ar": "اللوب"},
-    {"id": "hook_loop", "domain": "stroke", "en": "Hook loop", "ar": "اللوب الخطّافي"},
-    {"id": "fade_loop", "domain": "stroke", "en": "Fade loop", "ar": "اللوب المنحرف"},
-    {"id": "counterloop", "domain": "stroke", "en": "Counterloop", "ar": "اللوب المضاد"},
-    {"id": "smash", "domain": "stroke", "en": "Smash / kill", "ar": "السماش"},
-    {"id": "block", "domain": "stroke", "en": "Block", "ar": "الصد / البلوك"},
-    {"id": "punch_block", "domain": "stroke", "en": "Punch / active block", "ar": "الصد الهجومي"},
-    {"id": "chop_block", "domain": "stroke", "en": "Chop block", "ar": "صد القطع"},
-    {"id": "chop", "domain": "stroke", "en": "Chop", "ar": "القطع"},
-    {"id": "fish", "domain": "stroke", "en": "Fish", "ar": "الكرة المرتفعة القريبة"},
-    {"id": "lob", "domain": "stroke", "en": "Lob", "ar": "الكرة المرتفعة الدفاعية"},
-    {"id": "dig", "domain": "stroke", "en": "Dig", "ar": "رد السماش الدفاعي"},
-    {"id": "counter_drive", "domain": "stroke", "en": "Counter-drive", "ar": "الضربة المضادة"},
-    {"id": "twiddle", "domain": "stroke", "en": "Twiddle (racket flip)", "ar": "لفّ المضرب"},
-
-    {"id": "topspin", "domain": "spin", "en": "Topspin", "ar": "دوران أمامي"},
-    {"id": "backspin", "domain": "spin", "en": "Backspin", "ar": "دوران خلفي (قطع)"},
-    {"id": "sidespin_left", "domain": "spin", "en": "Side spin left", "ar": "دوران جانبي يسار"},
-    {"id": "sidespin_right", "domain": "spin", "en": "Side spin right", "ar": "دوران جانبي يمين"},
-    {"id": "corkspin", "domain": "spin", "en": "Corkspin", "ar": "دوران محوري"},
-    {"id": "mixed", "domain": "spin", "en": "Mixed spin", "ar": "دوران مختلط"},
-    {"id": "no_spin", "domain": "spin", "en": "No spin", "ar": "بدون دوران"},
-
-    {"id": "one_step", "domain": "footwork", "en": "One-step", "ar": "الخطوة الواحدة"},
-    {"id": "chasse_step", "domain": "footwork", "en": "Chasse / side-step", "ar": "خطوة الشاسيه"},
-    {"id": "slide_step", "domain": "footwork", "en": "Slide / shuffle", "ar": "الانزلاق"},
-    {"id": "cross_step", "domain": "footwork", "en": "Cross-step", "ar": "الخطوة المتقاطعة"},
-    {"id": "pivot", "domain": "footwork", "en": "Pivot / turn", "ar": "الدوران / البيفوت"},
-
-    {"id": "inverted", "domain": "equipment", "en": "Inverted / smooth", "ar": "الأملس / الجلد"},
-    {"id": "short_pips", "domain": "equipment", "en": "Short pips", "ar": "الحبوب القصيرة"},
-    {"id": "medium_pips", "domain": "equipment", "en": "Medium pips", "ar": "الحبوب المتوسطة"},
-    {"id": "long_pips", "domain": "equipment", "en": "Long pips", "ar": "الحبوب الطويلة"},
-    {"id": "anti", "domain": "equipment", "en": "Anti-spin", "ar": "الأنتي / الصد"},
-    {"id": "ox", "domain": "equipment", "en": "OX (no sponge)", "ar": "بدون سفنجة"},
-    {"id": "tacky", "domain": "equipment", "en": "Tacky", "ar": "لزِج"},
-    {"id": "grippy", "domain": "equipment", "en": "Grippy", "ar": "ماسك"},
-    {"id": "hybrid", "domain": "equipment", "en": "Hybrid rubber", "ar": "المطاط الهجين"},
-    {"id": "blade", "domain": "equipment", "en": "Blade", "ar": "الخشبة / البليد"},
-    {"id": "sponge", "domain": "equipment", "en": "Sponge", "ar": "الإسفنج / السفنجة"},
-
-    {"id": "fh_looper", "domain": "style", "en": "Forehand looper", "ar": "مهاجم بالأمامية"},
-    {"id": "two_winged_attacker", "domain": "style", "en": "Two-winged attacker", "ar": "مهاجم بالجهتين"},
-    {"id": "counter_driver", "domain": "style", "en": "Counter-driver / blocker", "ar": "صدّاد قريب من الطاولة"},
-    {"id": "all_rounder", "domain": "style", "en": "All-rounder", "ar": "شامل"},
-    {"id": "chopper", "domain": "style", "en": "Chopper / defender", "ar": "قطّاع / مدافع"},
-    {"id": "penhold_looper", "domain": "style", "en": "Penhold looper", "ar": "مهاجم قبضة القلم"},
-    {"id": "penhold_rpb", "domain": "style", "en": "Penhold RPB", "ar": "قبضة القلم بالظهر العكسي"},
-    {"id": "short_pips_hitter", "domain": "style", "en": "Short-pips hitter", "ar": "ضارب الحبوب القصيرة"},
-    {"id": "combination_chopper", "domain": "style", "en": "Combination-bat chopper", "ar": "قطّاع بمضرب مركّب"},
-
-    {"id": "shakehand", "domain": "grip", "en": "Shakehand", "ar": "قبضة المصافحة"},
-    {"id": "penhold_chinese", "domain": "grip", "en": "Chinese penhold", "ar": "قبضة القلم الصينية"},
-    {"id": "penhold_japanese", "domain": "grip", "en": "Japanese/Korean penhold", "ar": "قبضة القلم اليابانية"},
-    {"id": "seemiller", "domain": "grip", "en": "Seemiller grip", "ar": "قبضة سيميلر"},
-
-    {"id": "impaired_muscle_power", "domain": "para", "en": "Impaired muscle power", "ar": "ضعف قوة العضلات"},
-    {"id": "impaired_passive_rom", "domain": "para", "en": "Impaired passive ROM", "ar": "محدودية مدى الحركة"},
-    {"id": "limb_deficiency", "domain": "para", "en": "Limb deficiency", "ar": "نقص طرف"},
-    {"id": "leg_length_difference", "domain": "para", "en": "Leg-length difference", "ar": "فرق طول الساقين"},
-    {"id": "short_stature", "domain": "para", "en": "Short stature", "ar": "قِصر القامة"},
-    {"id": "hypertonia", "domain": "para", "en": "Hypertonia", "ar": "فرط التوتر العضلي"},
-    {"id": "ataxia", "domain": "para", "en": "Ataxia", "ar": "الترنّح"},
-    {"id": "athetosis", "domain": "para", "en": "Athetosis", "ar": "الكنع"},
-    {"id": "intellectual", "domain": "para", "en": "Intellectual impairment", "ar": "إعاقة ذهنية"},
-    {"id": "wheelchair", "domain": "para", "en": "Wheelchair", "ar": "كرسي متحرك"},
-    {"id": "standing", "domain": "para", "en": "Standing", "ar": "وقوف"},
-
-    {"id": "winner", "domain": "reason", "en": "Clean winner", "ar": "ضربة حاسمة"},
-    {"id": "unforced_error", "domain": "reason", "en": "Unforced error", "ar": "خطأ غير قسري"},
-    {"id": "missed_return", "domain": "reason", "en": "Missed return", "ar": "فشل الإرجاع"},
-    {"id": "ball_out", "domain": "reason", "en": "Ball out", "ar": "الكرة خارج"},
-    {"id": "net_fail", "domain": "reason", "en": "Failed to clear net", "ar": "لم تعبر الشبكة"},
-    {"id": "double_bounce", "domain": "reason", "en": "Double bounce", "ar": "ارتداد مزدوج"},
-    {"id": "service_fault", "domain": "reason", "en": "Service fault", "ar": "خطأ إرسال"},
-    {"id": "edge_winner", "domain": "reason", "en": "Edge-ball winner", "ar": "كرة حافة كاسبة"},
-
-    {"id": "forehand", "domain": "basic", "en": "Forehand", "ar": "الأمامية"},
-    {"id": "backhand", "domain": "basic", "en": "Backhand", "ar": "الخلفية"},
-    {"id": "table", "domain": "basic", "en": "Table", "ar": "الطاولة"},
-    {"id": "ball", "domain": "basic", "en": "Ball", "ar": "الكرة"},
-    {"id": "racket", "domain": "basic", "en": "Racket / bat", "ar": "المضرب"},
-    {"id": "game", "domain": "basic", "en": "Game", "ar": "لعبة"},
-    {"id": "set", "domain": "basic", "en": "Set", "ar": "شوط"},
-    {"id": "win", "domain": "basic", "en": "Win", "ar": "فوز"},
-    {"id": "loss", "domain": "basic", "en": "Loss", "ar": "خسارة"},
-
-    {"id": "confidence", "domain": "platform", "en": "Confidence", "ar": "درجة الثقة"},
-    {"id": "reliability", "domain": "platform", "en": "Reliability", "ar": "الموثوقية"},
-    {"id": "abstain", "domain": "platform", "en": "Abstain (I don't know)", "ar": "امتناع (مش متأكد)"},
-    {"id": "capture_tier", "domain": "platform", "en": "Capture tier", "ar": "مستوى التصوير"},
-    {"id": "model", "domain": "platform", "en": "Model", "ar": "نموذج"},
-    {"id": "dataset", "domain": "platform", "en": "Dataset", "ar": "مجموعة بيانات"},
-    {"id": "provenance", "domain": "platform", "en": "Provenance", "ar": "مصدر القرار"}
+    {
+      "id": "organization",
+      "domain": "ontology",
+      "en": "Organization",
+      "ar": "جهة / مؤسسة"
+    },
+    {
+      "id": "user",
+      "domain": "ontology",
+      "en": "User",
+      "ar": "مستخدم"
+    },
+    {
+      "id": "player",
+      "domain": "ontology",
+      "en": "Player",
+      "ar": "لاعب"
+    },
+    {
+      "id": "coach",
+      "domain": "ontology",
+      "en": "Coach",
+      "ar": "مدرب"
+    },
+    {
+      "id": "umpire",
+      "domain": "ontology",
+      "en": "Umpire",
+      "ar": "حكم"
+    },
+    {
+      "id": "video",
+      "domain": "ontology",
+      "en": "Video",
+      "ar": "فيديو"
+    },
+    {
+      "id": "match",
+      "domain": "ontology",
+      "en": "Match",
+      "ar": "مباراة"
+    },
+    {
+      "id": "rally",
+      "domain": "ontology",
+      "en": "Rally / Point",
+      "ar": "تبادُل / نقطة"
+    },
+    {
+      "id": "shot",
+      "domain": "ontology",
+      "en": "Shot / Stroke",
+      "ar": "ضربة"
+    },
+    {
+      "id": "event",
+      "domain": "ontology",
+      "en": "Event",
+      "ar": "حدث"
+    },
+    {
+      "id": "player_profile",
+      "domain": "ontology",
+      "en": "Player profile",
+      "ar": "ملف اللاعب"
+    },
+    {
+      "id": "opponent_dossier",
+      "domain": "ontology",
+      "en": "Opponent dossier",
+      "ar": "ملف الخصم"
+    },
+    {
+      "id": "matchup",
+      "domain": "ontology",
+      "en": "Matchup",
+      "ar": "مواجهة"
+    },
+    {
+      "id": "game_plan",
+      "domain": "ontology",
+      "en": "Game plan",
+      "ar": "خطة اللعب"
+    },
+    {
+      "id": "drill",
+      "domain": "ontology",
+      "en": "Drill",
+      "ar": "تمرين"
+    },
+    {
+      "id": "training_plan",
+      "domain": "ontology",
+      "en": "Training plan",
+      "ar": "خطة تدريب"
+    },
+    {
+      "id": "equipment",
+      "domain": "ontology",
+      "en": "Equipment",
+      "ar": "عُدّة"
+    },
+    {
+      "id": "strength",
+      "domain": "ontology",
+      "en": "Strength",
+      "ar": "نقطة قوة"
+    },
+    {
+      "id": "weakness",
+      "domain": "ontology",
+      "en": "Weakness",
+      "ar": "نقطة ضعف"
+    },
+    {
+      "id": "injury",
+      "domain": "ontology",
+      "en": "Injury",
+      "ar": "إصابة"
+    },
+    {
+      "id": "impairment",
+      "domain": "ontology",
+      "en": "Impairment",
+      "ar": "إعاقة"
+    },
+    {
+      "id": "bounce",
+      "domain": "event",
+      "en": "Bounce",
+      "ar": "ارتداد / نطّة"
+    },
+    {
+      "id": "net",
+      "domain": "event",
+      "en": "Net touch",
+      "ar": "لمس الشبكة"
+    },
+    {
+      "id": "hit",
+      "domain": "event",
+      "en": "Hit / contact",
+      "ar": "ضرب / تلامس"
+    },
+    {
+      "id": "serve",
+      "domain": "event",
+      "en": "Serve",
+      "ar": "إرسال"
+    },
+    {
+      "id": "point",
+      "domain": "event",
+      "en": "Point",
+      "ar": "نقطة"
+    },
+    {
+      "id": "let",
+      "domain": "event",
+      "en": "Let (replay)",
+      "ar": "إعادة (ليت)"
+    },
+    {
+      "id": "violation",
+      "domain": "event",
+      "en": "Violation",
+      "ar": "مخالفة"
+    },
+    {
+      "id": "timeout",
+      "domain": "event",
+      "en": "Timeout",
+      "ar": "وقت مستقطع"
+    },
+    {
+      "id": "set_change",
+      "domain": "event",
+      "en": "Set change",
+      "ar": "تغيير الشوط"
+    },
+    {
+      "id": "score_read",
+      "domain": "event",
+      "en": "Scoreboard read",
+      "ar": "قراءة النتيجة"
+    },
+    {
+      "id": "serve_pendulum",
+      "domain": "serve",
+      "en": "Pendulum serve",
+      "ar": "إرسال البندول"
+    },
+    {
+      "id": "serve_reverse_pendulum",
+      "domain": "serve",
+      "en": "Reverse pendulum",
+      "ar": "البندول العكسي"
+    },
+    {
+      "id": "serve_tomahawk",
+      "domain": "serve",
+      "en": "Tomahawk serve",
+      "ar": "إرسال التوماهوك"
+    },
+    {
+      "id": "serve_reverse_tomahawk",
+      "domain": "serve",
+      "en": "Reverse tomahawk",
+      "ar": "التوماهوك العكسي"
+    },
+    {
+      "id": "serve_shovel",
+      "domain": "serve",
+      "en": "Shovel serve",
+      "ar": "إرسال الجاروف"
+    },
+    {
+      "id": "serve_backhand",
+      "domain": "serve",
+      "en": "Backhand serve",
+      "ar": "إرسال خلفي"
+    },
+    {
+      "id": "serve_high_toss",
+      "domain": "serve",
+      "en": "High-toss serve",
+      "ar": "إرسال الرمية العالية"
+    },
+    {
+      "id": "serve_ghost",
+      "domain": "serve",
+      "en": "Ghost serve",
+      "ar": "الإرسال الشبح"
+    },
+    {
+      "id": "serve_hook",
+      "domain": "serve",
+      "en": "Hook serve",
+      "ar": "الإرسال الخطّافي"
+    },
+    {
+      "id": "serve_windshield_wiper",
+      "domain": "serve",
+      "en": "Windshield-wiper serve",
+      "ar": "إرسال المسّاحة"
+    },
+    {
+      "id": "push_short",
+      "domain": "stroke",
+      "en": "Short push",
+      "ar": "الدفع القصير"
+    },
+    {
+      "id": "push_long",
+      "domain": "stroke",
+      "en": "Long push",
+      "ar": "الدفع الطويل"
+    },
+    {
+      "id": "flick",
+      "domain": "stroke",
+      "en": "Flick / flip",
+      "ar": "الفليك"
+    },
+    {
+      "id": "banana_flick",
+      "domain": "stroke",
+      "en": "Banana flick / chiquita",
+      "ar": "فليك الموزة / الشيكيتا"
+    },
+    {
+      "id": "strawberry_flick",
+      "domain": "stroke",
+      "en": "Strawberry flick",
+      "ar": "فليك الفراولة"
+    },
+    {
+      "id": "drop_shot",
+      "domain": "stroke",
+      "en": "Drop shot",
+      "ar": "الكرة القصيرة الخادعة"
+    },
+    {
+      "id": "drive",
+      "domain": "stroke",
+      "en": "Drive",
+      "ar": "الدرايف"
+    },
+    {
+      "id": "loop",
+      "domain": "stroke",
+      "en": "Loop (topspin)",
+      "ar": "اللوب"
+    },
+    {
+      "id": "hook_loop",
+      "domain": "stroke",
+      "en": "Hook loop",
+      "ar": "اللوب الخطّافي"
+    },
+    {
+      "id": "fade_loop",
+      "domain": "stroke",
+      "en": "Fade loop",
+      "ar": "اللوب المنحرف"
+    },
+    {
+      "id": "counterloop",
+      "domain": "stroke",
+      "en": "Counterloop",
+      "ar": "اللوب المضاد"
+    },
+    {
+      "id": "smash",
+      "domain": "stroke",
+      "en": "Smash / kill",
+      "ar": "السماش"
+    },
+    {
+      "id": "block",
+      "domain": "stroke",
+      "en": "Block",
+      "ar": "الصد / البلوك"
+    },
+    {
+      "id": "punch_block",
+      "domain": "stroke",
+      "en": "Punch / active block",
+      "ar": "الصد الهجومي"
+    },
+    {
+      "id": "chop_block",
+      "domain": "stroke",
+      "en": "Chop block",
+      "ar": "صد القطع"
+    },
+    {
+      "id": "chop",
+      "domain": "stroke",
+      "en": "Chop",
+      "ar": "القطع"
+    },
+    {
+      "id": "fish",
+      "domain": "stroke",
+      "en": "Fish",
+      "ar": "الكرة المرتفعة القريبة"
+    },
+    {
+      "id": "lob",
+      "domain": "stroke",
+      "en": "Lob",
+      "ar": "الكرة المرتفعة الدفاعية"
+    },
+    {
+      "id": "dig",
+      "domain": "stroke",
+      "en": "Dig",
+      "ar": "رد السماش الدفاعي"
+    },
+    {
+      "id": "counter_drive",
+      "domain": "stroke",
+      "en": "Counter-drive",
+      "ar": "الضربة المضادة"
+    },
+    {
+      "id": "twiddle",
+      "domain": "stroke",
+      "en": "Twiddle (racket flip)",
+      "ar": "لفّ المضرب"
+    },
+    {
+      "id": "topspin",
+      "domain": "spin",
+      "en": "Topspin",
+      "ar": "دوران أمامي"
+    },
+    {
+      "id": "backspin",
+      "domain": "spin",
+      "en": "Backspin",
+      "ar": "دوران خلفي (قطع)"
+    },
+    {
+      "id": "sidespin_left",
+      "domain": "spin",
+      "en": "Side spin left",
+      "ar": "دوران جانبي يسار"
+    },
+    {
+      "id": "sidespin_right",
+      "domain": "spin",
+      "en": "Side spin right",
+      "ar": "دوران جانبي يمين"
+    },
+    {
+      "id": "corkspin",
+      "domain": "spin",
+      "en": "Corkspin",
+      "ar": "دوران محوري"
+    },
+    {
+      "id": "mixed",
+      "domain": "spin",
+      "en": "Mixed spin",
+      "ar": "دوران مختلط"
+    },
+    {
+      "id": "no_spin",
+      "domain": "spin",
+      "en": "No spin",
+      "ar": "بدون دوران"
+    },
+    {
+      "id": "one_step",
+      "domain": "footwork",
+      "en": "One-step",
+      "ar": "الخطوة الواحدة"
+    },
+    {
+      "id": "chasse_step",
+      "domain": "footwork",
+      "en": "Chasse / side-step",
+      "ar": "خطوة الشاسيه"
+    },
+    {
+      "id": "slide_step",
+      "domain": "footwork",
+      "en": "Slide / shuffle",
+      "ar": "الانزلاق"
+    },
+    {
+      "id": "cross_step",
+      "domain": "footwork",
+      "en": "Cross-step",
+      "ar": "الخطوة المتقاطعة"
+    },
+    {
+      "id": "pivot",
+      "domain": "footwork",
+      "en": "Pivot / turn",
+      "ar": "الدوران / البيفوت"
+    },
+    {
+      "id": "inverted",
+      "domain": "equipment",
+      "en": "Inverted / smooth",
+      "ar": "الأملس / الجلد"
+    },
+    {
+      "id": "short_pips",
+      "domain": "equipment",
+      "en": "Short pips",
+      "ar": "الحبوب القصيرة"
+    },
+    {
+      "id": "medium_pips",
+      "domain": "equipment",
+      "en": "Medium pips",
+      "ar": "الحبوب المتوسطة"
+    },
+    {
+      "id": "long_pips",
+      "domain": "equipment",
+      "en": "Long pips",
+      "ar": "الحبوب الطويلة"
+    },
+    {
+      "id": "anti",
+      "domain": "equipment",
+      "en": "Anti-spin",
+      "ar": "الأنتي / الصد"
+    },
+    {
+      "id": "ox",
+      "domain": "equipment",
+      "en": "OX (no sponge)",
+      "ar": "بدون سفنجة"
+    },
+    {
+      "id": "tacky",
+      "domain": "equipment",
+      "en": "Tacky",
+      "ar": "لزِج"
+    },
+    {
+      "id": "grippy",
+      "domain": "equipment",
+      "en": "Grippy",
+      "ar": "ماسك"
+    },
+    {
+      "id": "hybrid",
+      "domain": "equipment",
+      "en": "Hybrid rubber",
+      "ar": "المطاط الهجين"
+    },
+    {
+      "id": "blade",
+      "domain": "equipment",
+      "en": "Blade",
+      "ar": "الخشبة / البليد"
+    },
+    {
+      "id": "sponge",
+      "domain": "equipment",
+      "en": "Sponge",
+      "ar": "الإسفنج / السفنجة"
+    },
+    {
+      "id": "fh_looper",
+      "domain": "style",
+      "en": "Forehand looper",
+      "ar": "مهاجم بالأمامية"
+    },
+    {
+      "id": "two_winged_attacker",
+      "domain": "style",
+      "en": "Two-winged attacker",
+      "ar": "مهاجم بالجهتين"
+    },
+    {
+      "id": "counter_driver",
+      "domain": "style",
+      "en": "Counter-driver / blocker",
+      "ar": "صدّاد قريب من الطاولة"
+    },
+    {
+      "id": "all_rounder",
+      "domain": "style",
+      "en": "All-rounder",
+      "ar": "شامل"
+    },
+    {
+      "id": "chopper",
+      "domain": "style",
+      "en": "Chopper / defender",
+      "ar": "قطّاع / مدافع"
+    },
+    {
+      "id": "penhold_looper",
+      "domain": "style",
+      "en": "Penhold looper",
+      "ar": "مهاجم قبضة القلم"
+    },
+    {
+      "id": "penhold_rpb",
+      "domain": "style",
+      "en": "Penhold RPB",
+      "ar": "قبضة القلم بالظهر العكسي"
+    },
+    {
+      "id": "short_pips_hitter",
+      "domain": "style",
+      "en": "Short-pips hitter",
+      "ar": "ضارب الحبوب القصيرة"
+    },
+    {
+      "id": "combination_chopper",
+      "domain": "style",
+      "en": "Combination-bat chopper",
+      "ar": "قطّاع بمضرب مركّب"
+    },
+    {
+      "id": "shakehand",
+      "domain": "grip",
+      "en": "Shakehand",
+      "ar": "قبضة المصافحة"
+    },
+    {
+      "id": "penhold_chinese",
+      "domain": "grip",
+      "en": "Chinese penhold",
+      "ar": "قبضة القلم الصينية"
+    },
+    {
+      "id": "penhold_japanese",
+      "domain": "grip",
+      "en": "Japanese/Korean penhold",
+      "ar": "قبضة القلم اليابانية"
+    },
+    {
+      "id": "seemiller",
+      "domain": "grip",
+      "en": "Seemiller grip",
+      "ar": "قبضة سيميلر"
+    },
+    {
+      "id": "impaired_muscle_power",
+      "domain": "para",
+      "en": "Impaired muscle power",
+      "ar": "ضعف قوة العضلات"
+    },
+    {
+      "id": "impaired_passive_rom",
+      "domain": "para",
+      "en": "Impaired passive ROM",
+      "ar": "محدودية مدى الحركة"
+    },
+    {
+      "id": "limb_deficiency",
+      "domain": "para",
+      "en": "Limb deficiency",
+      "ar": "نقص طرف"
+    },
+    {
+      "id": "leg_length_difference",
+      "domain": "para",
+      "en": "Leg-length difference",
+      "ar": "فرق طول الساقين"
+    },
+    {
+      "id": "short_stature",
+      "domain": "para",
+      "en": "Short stature",
+      "ar": "قِصر القامة"
+    },
+    {
+      "id": "hypertonia",
+      "domain": "para",
+      "en": "Hypertonia",
+      "ar": "فرط التوتر العضلي"
+    },
+    {
+      "id": "ataxia",
+      "domain": "para",
+      "en": "Ataxia",
+      "ar": "الترنّح"
+    },
+    {
+      "id": "athetosis",
+      "domain": "para",
+      "en": "Athetosis",
+      "ar": "الكنع"
+    },
+    {
+      "id": "intellectual",
+      "domain": "para",
+      "en": "Intellectual impairment",
+      "ar": "إعاقة ذهنية"
+    },
+    {
+      "id": "wheelchair",
+      "domain": "para",
+      "en": "Wheelchair",
+      "ar": "كرسي متحرك"
+    },
+    {
+      "id": "standing",
+      "domain": "para",
+      "en": "Standing",
+      "ar": "وقوف"
+    },
+    {
+      "id": "winner",
+      "domain": "reason",
+      "en": "Clean winner",
+      "ar": "ضربة حاسمة"
+    },
+    {
+      "id": "unforced_error",
+      "domain": "reason",
+      "en": "Unforced error",
+      "ar": "خطأ غير قسري"
+    },
+    {
+      "id": "missed_return",
+      "domain": "reason",
+      "en": "Missed return",
+      "ar": "فشل الإرجاع"
+    },
+    {
+      "id": "ball_out",
+      "domain": "reason",
+      "en": "Ball out",
+      "ar": "الكرة خارج"
+    },
+    {
+      "id": "net_fail",
+      "domain": "reason",
+      "en": "Failed to clear net",
+      "ar": "لم تعبر الشبكة"
+    },
+    {
+      "id": "double_bounce",
+      "domain": "reason",
+      "en": "Double bounce",
+      "ar": "ارتداد مزدوج"
+    },
+    {
+      "id": "service_fault",
+      "domain": "reason",
+      "en": "Service fault",
+      "ar": "خطأ إرسال"
+    },
+    {
+      "id": "edge_winner",
+      "domain": "reason",
+      "en": "Edge-ball winner",
+      "ar": "كرة حافة كاسبة"
+    },
+    {
+      "id": "forehand",
+      "domain": "basic",
+      "en": "Forehand",
+      "ar": "الأمامية"
+    },
+    {
+      "id": "backhand",
+      "domain": "basic",
+      "en": "Backhand",
+      "ar": "الخلفية"
+    },
+    {
+      "id": "table",
+      "domain": "basic",
+      "en": "Table",
+      "ar": "الطاولة"
+    },
+    {
+      "id": "ball",
+      "domain": "basic",
+      "en": "Ball",
+      "ar": "الكرة"
+    },
+    {
+      "id": "racket",
+      "domain": "basic",
+      "en": "Racket / bat",
+      "ar": "المضرب"
+    },
+    {
+      "id": "game",
+      "domain": "basic",
+      "en": "Game",
+      "ar": "لعبة"
+    },
+    {
+      "id": "set",
+      "domain": "basic",
+      "en": "Set",
+      "ar": "شوط"
+    },
+    {
+      "id": "win",
+      "domain": "basic",
+      "en": "Win",
+      "ar": "فوز"
+    },
+    {
+      "id": "loss",
+      "domain": "basic",
+      "en": "Loss",
+      "ar": "خسارة"
+    },
+    {
+      "id": "confidence",
+      "domain": "platform",
+      "en": "Confidence",
+      "ar": "درجة الثقة"
+    },
+    {
+      "id": "reliability",
+      "domain": "platform",
+      "en": "Reliability",
+      "ar": "الموثوقية"
+    },
+    {
+      "id": "abstain",
+      "domain": "platform",
+      "en": "Abstain (I don't know)",
+      "ar": "امتناع (مش متأكد)"
+    },
+    {
+      "id": "capture_tier",
+      "domain": "platform",
+      "en": "Capture tier",
+      "ar": "مستوى التصوير"
+    },
+    {
+      "id": "model",
+      "domain": "platform",
+      "en": "Model",
+      "ar": "نموذج"
+    },
+    {
+      "id": "dataset",
+      "domain": "platform",
+      "en": "Dataset",
+      "ar": "مجموعة بيانات"
+    },
+    {
+      "id": "provenance",
+      "domain": "platform",
+      "en": "Provenance",
+      "ar": "مصدر القرار"
+    },
+    {
+      "id": "receive",
+      "domain": "ontology",
+      "en": "Receive",
+      "ar": "الاستقبال"
+    },
+    {
+      "id": "edge_contact",
+      "domain": "ontology",
+      "en": "Edge contact",
+      "ar": "تلامس الحافة"
+    },
+    {
+      "id": "rally_start",
+      "domain": "ontology",
+      "en": "Rally start",
+      "ar": "بداية التبادل"
+    },
+    {
+      "id": "rally_end",
+      "domain": "ontology",
+      "en": "Rally end",
+      "ar": "نهاية التبادل"
+    },
+    {
+      "id": "equipment_change",
+      "domain": "ontology",
+      "en": "Equipment change",
+      "ar": "تغيير العُدّة"
+    },
+    {
+      "id": "capture_failure",
+      "domain": "ontology",
+      "en": "Capture failure",
+      "ar": "فشل الالتقاط"
+    },
+    {
+      "id": "spin_axis",
+      "domain": "ontology",
+      "en": "Spin axis",
+      "ar": "محور الدوران"
+    },
+    {
+      "id": "spin_strength",
+      "domain": "ontology",
+      "en": "Spin strength",
+      "ar": "شدة الدوران"
+    },
+    {
+      "id": "rpm",
+      "domain": "ontology",
+      "en": "RPM (revolutions/minute)",
+      "ar": "لفّة/دقيقة (سرعة الدوران)"
+    },
+    {
+      "id": "pose_landmark",
+      "domain": "ontology",
+      "en": "Pose landmark",
+      "ar": "معلَم تشريحي"
+    },
+    {
+      "id": "joint",
+      "domain": "ontology",
+      "en": "Joint",
+      "ar": "مفصل"
+    },
+    {
+      "id": "segment",
+      "domain": "ontology",
+      "en": "Body segment",
+      "ar": "جزء جسمي"
+    },
+    {
+      "id": "kinetic_chain",
+      "domain": "ontology",
+      "en": "Kinetic chain",
+      "ar": "السلسلة الحركية"
+    },
+    {
+      "id": "stance",
+      "domain": "ontology",
+      "en": "Stance",
+      "ar": "الوقفة"
+    },
+    {
+      "id": "ready_position",
+      "domain": "ontology",
+      "en": "Ready position",
+      "ar": "وضع الاستعداد"
+    },
+    {
+      "id": "backswing",
+      "domain": "ontology",
+      "en": "Backswing",
+      "ar": "التحضير (الرجوع للخلف)"
+    },
+    {
+      "id": "forward_swing",
+      "domain": "ontology",
+      "en": "Forward swing",
+      "ar": "الاندفاع الأمامي"
+    },
+    {
+      "id": "contact_phase",
+      "domain": "ontology",
+      "en": "Contact / impact",
+      "ar": "لحظة التلامس"
+    },
+    {
+      "id": "follow_through",
+      "domain": "ontology",
+      "en": "Follow-through",
+      "ar": "المتابعة"
+    },
+    {
+      "id": "recovery",
+      "domain": "ontology",
+      "en": "Recovery",
+      "ar": "العودة للوضع"
+    },
+    {
+      "id": "handedness",
+      "domain": "ontology",
+      "en": "Handedness",
+      "ar": "اليد المفضّلة"
+    },
+    {
+      "id": "court_frame",
+      "domain": "ontology",
+      "en": "Court coordinate frame",
+      "ar": "إطار إحداثيات الملعب"
+    },
+    {
+      "id": "shoulder",
+      "domain": "ontology",
+      "en": "Shoulder",
+      "ar": "الكتف"
+    },
+    {
+      "id": "elbow",
+      "domain": "ontology",
+      "en": "Elbow",
+      "ar": "المرفق"
+    },
+    {
+      "id": "wrist",
+      "domain": "ontology",
+      "en": "Wrist",
+      "ar": "المعصم"
+    },
+    {
+      "id": "hip",
+      "domain": "ontology",
+      "en": "Hip",
+      "ar": "الورك"
+    },
+    {
+      "id": "knee",
+      "domain": "ontology",
+      "en": "Knee",
+      "ar": "الركبة"
+    },
+    {
+      "id": "ankle",
+      "domain": "ontology",
+      "en": "Ankle",
+      "ar": "الكاحل"
+    },
+    {
+      "id": "trunk",
+      "domain": "ontology",
+      "en": "Trunk / torso",
+      "ar": "الجذع"
+    },
+    {
+      "id": "rubber",
+      "domain": "ontology",
+      "en": "Rubber (covering)",
+      "ar": "المطاط (الكسوة)"
+    },
+    {
+      "id": "shoes",
+      "domain": "ontology",
+      "en": "Shoes",
+      "ar": "الحذاء"
+    },
+    {
+      "id": "robot",
+      "domain": "ontology",
+      "en": "Ball robot",
+      "ar": "روبوت الكرات"
+    },
+    {
+      "id": "sensor",
+      "domain": "ontology",
+      "en": "Sensor",
+      "ar": "حسّاس"
+    },
+    {
+      "id": "camera",
+      "domain": "ontology",
+      "en": "Camera",
+      "ar": "كاميرا"
+    },
+    {
+      "id": "lighting",
+      "domain": "ontology",
+      "en": "Lighting",
+      "ar": "الإضاءة"
+    },
+    {
+      "id": "environment",
+      "domain": "ontology",
+      "en": "Environment",
+      "ar": "البيئة"
+    },
+    {
+      "id": "tournament",
+      "domain": "ontology",
+      "en": "Tournament",
+      "ar": "بطولة"
+    },
+    {
+      "id": "sequence",
+      "domain": "ontology",
+      "en": "Sequence / pattern",
+      "ar": "تسلسل / نمط"
+    },
+    {
+      "id": "timeline",
+      "domain": "ontology",
+      "en": "Timeline",
+      "ar": "الخط الزمني"
+    },
+    {
+      "id": "statistic",
+      "domain": "ontology",
+      "en": "Statistic",
+      "ar": "إحصائية"
+    },
+    {
+      "id": "annotation",
+      "domain": "ontology",
+      "en": "Annotation",
+      "ar": "وسم / تعليق توضيحي"
+    },
+    {
+      "id": "prediction",
+      "domain": "ontology",
+      "en": "Prediction",
+      "ar": "تنبؤ"
+    },
+    {
+      "id": "ground_truth",
+      "domain": "ontology",
+      "en": "Ground truth",
+      "ar": "الحقيقة المرجعية"
+    },
+    {
+      "id": "calibration",
+      "domain": "ontology",
+      "en": "Calibration",
+      "ar": "المعايرة"
+    },
+    {
+      "id": "inference",
+      "domain": "ontology",
+      "en": "Inference",
+      "ar": "الاستدلال"
+    },
+    {
+      "id": "training",
+      "domain": "ontology",
+      "en": "Training (model)",
+      "ar": "تدريب النموذج"
+    },
+    {
+      "id": "validation",
+      "domain": "ontology",
+      "en": "Validation",
+      "ar": "التحقّق"
+    },
+    {
+      "id": "benchmark",
+      "domain": "ontology",
+      "en": "Benchmark",
+      "ar": "معيار قياس"
+    },
+    {
+      "id": "inference_job",
+      "domain": "ontology",
+      "en": "Inference job",
+      "ar": "مهمة استدلال"
+    },
+    {
+      "id": "reliability_envelope",
+      "domain": "ontology",
+      "en": "Reliability envelope",
+      "ar": "غلاف الموثوقية"
+    },
+    {
+      "id": "capture_certification",
+      "domain": "ontology",
+      "en": "Capture certification",
+      "ar": "اعتماد الالتقاط"
+    }
   ]
 }
