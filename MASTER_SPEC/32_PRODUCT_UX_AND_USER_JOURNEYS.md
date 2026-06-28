@@ -113,6 +113,42 @@ Each role sees a tailored home and only what it may touch (server-enforced, Part
   Confidence band per metric + evidence   [Assign training block] [Export PDF]
 ```
 
+## R. Design system, branding & white-label
+A shared component library + **design tokens** (color/spacing/type) for consistency across web/mobile/tablet; **per-federation white-label** theming (logo/colors); dark mode.
+
+## S. Navigation & findability
+**Global search** (players/matches/opponents), filters & saved views, **command palette** for power users, breadcrumbs, recent items, quick actions.
+
+## T. Notifications system
+Channels: in-app · email · push (· SMS opt-in). Per-user **preferences** + **do-not-disturb** + digests. Triggers: analysis done, game plan ready, plan-vs-outcome due, security events. Templated + localized.
+
+## U. Settings & preferences
+Units, **language**, theme, notification prefs, account/security (sessions, MFA), org settings (admins). Player: consent & privacy controls (see Z).
+
+## V. Data visualization
+Chart catalog: shot distribution, **placement heatmaps** (6/9-zone), momentum/timeline, **radar** comparison, serve→receive matrix, win-probability. **Colour-blind-safe palettes**, interactive tooltips, every chart shows its **confidence/sample size**.
+
+## W. Video tooling & comparison
+Playback speed, **frame-step**, loop, zoom, **clip-and-share**, multi-angle switch (T3), keyboard shortcuts. **Side-by-side compare** (vs model · vs past self · vs opponent) with synced playback.
+
+## X. Coach efficiency
+**Reusable templates** (game-plan & training-block templates), bulk actions, keyboard-driven workflows, duplicate-from-last.
+
+## Y. Calendar, roster & competition UX
+Training **calendar** + session reminders (Part 15 logistics); **roster/team** management (assign players, coaches, medical); **tournament** brackets/schedules/results (Part 15).
+
+## Z. Player self-service & privacy controls
+The player can: view their profile/progress, **manage consent**, **download their data** and request deletion (DSAR UX, Part 31), edit basic profile — age-appropriate for juniors.
+
+## AA. Help, feedback, microcopy & tone
+In-app help/tutorials, **what's-new** changelog, feedback capture. **Tone:** weaknesses framed **constructively** (improvement-oriented), junior-friendly language, never shaming.
+
+## AB. Safety & confirmation
+Destructive actions (archive/delete) require **confirmation + undo**; clear **session-timeout / re-auth** flow without losing work.
+
+## AC. Product success metrics (is the UX working?)
+Track **activation** (first analysis + first game plan), **retention**, feature adoption, **time-to-first-insight**, and game-plan→outcome usage — to validate the product loop (ties Part 16 efficacy).
+
 ---
 
 ➡️ **NEXT FILE: `33_COMPETITIVE_LANDSCAPE.md`**
