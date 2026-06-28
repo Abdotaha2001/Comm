@@ -88,4 +88,4 @@
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `37_DATA_MODEL_AND_API_CONTRACT_BUILD_SPEC.md`**
