@@ -62,6 +62,39 @@ GDPR (EU athletes) · child-safeguarding policy (academies) · anti-doping data 
 - ✅ JWT, RBAC, org-scoping, `consents`, `audit_log`, archive/soft-delete, `429` schema.
 - ⬜ Deferred (pre-production): RLS policies, encryption-at-rest config, secrets manager, rate-limit enforcement, refresh-token rotation, upload sandboxing, face blurring.
 
+## L. Application / API & session hardening
+- Strict **input validation** + output encoding; **request size limits**; **CORS** allow-list; **CSRF** protection for cookie flows; security headers (HSTS/CSP/X-Frame).
+- **MFA** for privileged roles (admin/umpire). **Token revocation** + short TTL + **refresh-token rotation**; device/session management; concurrent-session limits.
+- **Secrets rotation** on a schedule; never in CI logs or the repo.
+
+## M. Supply-chain security
+- Pinned dependencies + **SBOM** + automated vuln scanning (Dependabot-style); no untrusted packages.
+- **Pretrained-model provenance** (Part 26 reuse risk): verify **checksums/signatures**, scan weights, prefer reputable sources — a backdoored model is a supply-chain attack.
+- Signed builds; least-privilege CI.
+
+## N. ML & LLM security
+- **Adversarial robustness:** officiating/ball/scoreboard models tested against evasion (adversarial patches, lighting attacks) — a wrong forced call is the worst case.
+- **Model theft / extraction:** rate-limit + watermark outputs. **Membership inference:** avoid leaking who's in the training data.
+- **Data poisoning:** the annotation IAA gate (Part 30) + provenance defend training data.
+- **LLM layer (Part 11):** treat all retrieved/user text as **untrusted** (prompt-injection defense); **tool-use + output allow-lists**; filter **PII out of prompts**; block exfiltration; ground every answer (no ungrounded claims); jailbreak testing.
+
+## O. Incident response & breach notification
+- Severity levels + an on-call runbook; contain → eradicate → recover → **post-mortem** (blameless).
+- **Breach notification:** GDPR **72-hour** authority notice; inform affected users/**guardians (minors)**; documented decision log.
+
+## P. Logging & audit hygiene
+- Log security events; **never log PII, tokens, or full video URLs**. Audit trail is **append-only / tamper-evident** (hash-chained) — Part 09.
+- Defined log **retention** + access controls; alerts on anomalous access.
+
+## Q. Data-subject rights & governance (beyond RTBF)
+- Handle **DSARs:** access · rectification · **portability** (export) · objection — with SLAs.
+- **DPO** role; **Data Processing Agreements** with every processor; **ROPA** (records of processing); **DPIA mandatory for biometric** processing.
+- **Children's age-appropriate design** (no ad-profiling of minors; data minimisation). **Anonymise/pseudonymise** research datasets.
+
+## R. Standards, assurance & edge
+- Align to **OWASP ASVS / Top-10**; target **SOC 2 / ISO 27001**; **penetration testing** + a **bug-bounty** before federation rollout.
+- **Edge/courtside boxes** (Part 02): secure boot, disk encryption, physical-tamper resistance; **vendor/third-party risk** review (broadcast feeds, cloud, robots).
+
 ---
 
 ➡️ **NEXT FILE: `32_PRODUCT_UX_AND_USER_JOURNEYS.md`**
