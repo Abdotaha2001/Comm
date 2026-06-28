@@ -145,6 +145,16 @@ Not (yet) for: casual recreational players wanting a toy app; broadcast-graphics
 ## Z. Competitive KPIs
 Track **head-to-head win rate** in deals, displacement of incumbents, feature-parity gap closing, share of voice in target regions — so "differentiation" is measured, not assumed.
 
+## AA. Alternative-tech & non-obvious competitors
+Different approaches and buyers we must not ignore:
+| Competitor | Approach | Why it matters / our angle |
+|------------|----------|----------------------------|
+| **Smart tables / IoT scoring** | sensors in table/net (not CV) | rival data path; we win on richer CV analysis + coaching, no special hardware |
+| **Racket / wearable IMU sensors** | stroke/spin from device on bat/wrist | accurate spin/swing — **partner** for ground truth (Part 14) rather than fight |
+| **Equipment brands (Butterfly/DHS/Stiga)** | could bundle an app with gear | strong distribution → **partner** (equipment intelligence, Part 20) before they compete |
+| **Federation / national-team in-house tools** (esp. China) | internal R&D — they **don't buy** | target federations without internal teams; sell where build-vs-buy favors buy |
+| **Status quo: "do nothing"** | coach intuition + plain video | ⭐ **the real #1 competitor** — beat it with speed, the prescribe→verify loop, and an honest free tier |
+
 > **Honest note:** beyond this, competitive depth needs **primary research** — competitor trials, customer/coach interviews, real price points — not more spec. This doc is now a strong framework to fill with field data.
 
 ## Sources
