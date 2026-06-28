@@ -33,10 +33,13 @@ def _derive_capture_kpis(result: dict) -> dict:
 
 
 def _capture_acceptance(run, result, measurements, context):
-    """Run the Capture Acceptance Framework (Part 35). Returns (certification,
-    compact_acceptance_dict). Degrades gracefully: never fails the analysis."""
-    from .capture_quality import compute_cqs  # lazy: schema load only when used
+    """Run the Capture Acceptance Framework (Part 35). Returns
+    (result, compact_acceptance_dict, reliability_ceiling). Degrades gracefully:
+    never fails the analysis."""
+    # lazy import: schema load only when used
+    from .capture_quality import compute_cqs, load_schema, reliability_ceiling_for
 
+    schema = load_schema()
     merged = {**_derive_capture_kpis(result), **(measurements or {})}
     ctx = {
         "session_id": run.id,
@@ -44,7 +47,8 @@ def _capture_acceptance(run, result, measurements, context):
         "model_version": result.get("detector"),
         **(context or {}),
     }
-    res = compute_cqs(merged, context=ctx)
+    res = compute_cqs(merged, context=ctx, schema=schema)
+    ceiling = reliability_ceiling_for(res.certification, schema)
     compact = {
         "schema_version": res.schema_version,
         "certification": res.certification,
@@ -61,7 +65,7 @@ def _capture_acceptance(run, result, measurements, context):
         "provenance_hash": res.provenance["hash"],
         "per_level": res.per_level,
     }
-    return res.certification, compact
+    return res, compact, ceiling
 
 
 def analyze_run(
@@ -133,11 +137,23 @@ def analyze_run(
         # Capture certification (Part 35) — only when a capture report is supplied.
         if capture_measurements is not None:
             try:
-                cert, acceptance = _capture_acceptance(
+                res, acceptance, ceiling = _capture_acceptance(
                     run, result, capture_measurements, capture_context
                 )
-                run.capture_certification = cert
+                run.capture_certification = res.certification
                 run.capture_acceptance = acceptance
+                # The capture grade caps analysis reliability (min, not average —
+                # a poor capture can't yield a confident analysis, Part 10).
+                footage = result["reliability_index"]
+                capped = round(min(footage, ceiling), 4)
+                run.reliability_index = capped
+                run.input_quality = {
+                    **(run.input_quality or {}),
+                    "footage_reliability_index": footage,
+                    "capture_certification": res.certification,
+                    "reliability_status": res.reliability_envelope["status"],
+                    "reliability_capped_by_capture": capped < footage,
+                }
             except Exception as cap_exc:  # noqa: BLE001 — never fail analysis on this
                 run.capture_acceptance = {"error": str(cap_exc)}
 

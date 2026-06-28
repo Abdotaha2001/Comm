@@ -410,6 +410,16 @@ def compute_cqs(
 # --------------------------------------------------------------------------- #
 # Reliability envelope + provenance
 # --------------------------------------------------------------------------- #
+def reliability_ceiling_for(certification: str, schema: dict) -> float:
+    """Upper bound the analysis reliability may take given the capture grade.
+    Applied downstream as a cap (min), never an average (Part 10)."""
+    ceiling = schema.get("reliability_ceiling", {})
+    try:
+        return float(ceiling.get(certification, 1.0))
+    except (TypeError, ValueError):
+        return 1.0
+
+
 def _sync_status(measurements: dict) -> str:
     if not measurements.get("time_synchronization", False):
         return "unlocked"

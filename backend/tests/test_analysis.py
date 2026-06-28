@@ -105,10 +105,39 @@ def test_analyze_with_capture_report_certifies(client, coach_headers):
     assert acc["reliability_envelope"]["status"] == "verified"
     assert acc["reliability_envelope"]["provenance_hash"].startswith("sha256:")
     assert acc["failed_gates"] == []
+    # Platinum capture (ceiling 1.0) does not down-weight analysis reliability.
+    iq = body["input_quality"]
+    assert iq["reliability_status"] == "verified"
+    assert iq["reliability_capped_by_capture"] is False
 
     # The same fields are returned by GET /analysis-runs/{id}.
     got = client.get(f"/v1/analysis-runs/{body['id']}", headers=coach_headers).json()
     assert got["capture_certification"] == "platinum"
+
+
+def test_failed_capture_caps_analysis_reliability(client, coach_headers):
+    pid = client.post(
+        "/v1/players", headers=coach_headers, json={"full_name": "P"}
+    ).json()["id"]
+    vid = client.post(
+        f"/v1/players/{pid}/videos",
+        headers=coach_headers,
+        files={"file": ("ball.avi", _synth_to_bytes(), "video/avi")},
+    ).json()["id"]
+
+    report = _platinum_capture_report()
+    report["lux"] = 200  # below the critical floor -> Bronze-mandatory KPI fails -> certification fail
+    run = client.post(
+        f"/v1/videos/{vid}/analyze",
+        headers=coach_headers,
+        json={"capture_measurements": report},
+    ).json()
+
+    assert run["capture_certification"] == "fail"
+    # A failed capture forces the analysis reliability down (cap 0.3) and to abstain,
+    # even though the footage itself tracked the ball well.
+    assert run["reliability_index"] <= 0.3
+    assert run["input_quality"]["reliability_status"] == "abstain"
 
 
 def test_analyze_requires_coach(client, player_headers):

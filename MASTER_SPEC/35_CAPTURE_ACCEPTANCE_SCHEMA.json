@@ -39,6 +39,14 @@
     "bronze": "preliminary",
     "fail": "unreliable"
   },
+  "reliability_ceiling": {
+    "platinum": 1.0,
+    "gold": 0.9,
+    "silver": 0.75,
+    "bronze": 0.6,
+    "fail": 0.3,
+    "_note": "Upper bound the analysis reliability may take given the capture grade. Applied as a cap (min), never an average (Part 10)."
+  },
   "certification_levels": {
     "fail": { "rank": 0, "label": "not accepted", "tier": null, "min_effective_score": 0.0, "reliability": "unreliable", "mandatory_kpis": [] },
     "bronze": {
