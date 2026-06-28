@@ -67,6 +67,52 @@ Dashboard
 | Training | `GET/POST /players/{id}/training-plans`, `GET /drills` |
 | Auth/admin | `/auth/*`, players CRUD, webhooks |
 
+## H. Onboarding & first-run
+Org/team setup → add first player → **capture consent** (minor → guardian flow, Part 31) → **capture-setup guide** (Part 35) → upload first video → guided tour of the flagship loop. Every empty section nudges the next action ("add a video", "prepare for an opponent").
+
+## I. Role-aware UI (RBAC reflected)
+Each role sees a tailored home and only what it may touch (server-enforced, Part 31): **medical/injury data is hidden from coaches**; players are read-only on rosters; umpires get the officiating console. Sensitive items are **hidden, not just disabled**.
+
+## J. Reliability design system (the visual language)
+- Confidence rendered as a **band** (green = high · amber = moderate · grey = low/preliminary) **+ the interval** ("78 ± 6 km/h"); **never a bare number**.
+- `abstain` → an explicit **"not sure — needs review"** state, not a fake value.
+- Every claim has a consistent **evidence drill-down** affordance (tap → the frames/stats behind it).
+
+## K. Loading / empty / error states
+- **Skeleton loaders**; analysis **streams partial results** as it processes (Part 13.6).
+- **Input-quality warning** before processing poor footage ("low light / heavy occlusion — results limited").
+- Failed run → friendly message + **retry**; never a blank screen.
+
+## L. Accessibility & localization UX
+- **WCAG 2.1 AA:** keyboard nav, contrast ratios, alt text, **video captions**, focus order.
+- **Localization:** true **RTL mirroring** for Arabic; localized units/date formats and **name order**; in-app **language switcher** (strings from the glossary, Part 28).
+
+## M. Reports, export & collaboration
+- **PDF reports** (coach version + simplified player version); shareable expiring links.
+- **Share the game plan with the player**; comments/notes on clips; multiple coaches per team.
+
+## N. Courtside, progress & juniors
+- **Between-games tablet view** courtside (live coaching window, Part 14).
+- **Longitudinal progress** + LTAD stage & trainability windows (Part 23).
+- **Junior gamification:** badges, streaks, milestones (Part 14).
+
+## O. Para & explainability UX
+- **Wheelchair-aware views** (no able-bodied footwork; class context, Part 24); the product is usable **by** disabled coaches/players too (accessibility).
+- **"Why this plan?"** — expandable rationale + evidence + a link to the model card (trust, Part 10/11).
+
+## P. Offline & responsive
+- **Low-connectivity capture + later sync** for academies; **mobile-first** for players, **desktop** for coaches; courtside **tablet**.
+
+## Q. Flagship wireframes (text sketch)
+```
+[ANALYSIS VIEWER]                         [GAME PLAN — vs Opponent]
+ ┌── video ───────────┬─ rally list ─┐    Win prob: 58% (amber, low conf) ⓘ
+ │  ▶ telestration    │ #1 ✔ 0:12    │    ▸ Exploit: FH over-reliance (82%) ⓘ
+ │  �= timeline ▮▮|▮   │ #2 ✗ 0:09    │    ▸ Serve: long backspin to pips ⓘ
+ └────────────────────┴──────────────┘    ▸ Receive / Rally / Placement …
+  Confidence band per metric + evidence   [Assign training block] [Export PDF]
+```
+
 ---
 
 ➡️ **NEXT FILE: `33_COMPETITIVE_LANDSCAPE.md`**
