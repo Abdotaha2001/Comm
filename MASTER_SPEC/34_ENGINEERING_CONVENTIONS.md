@@ -269,6 +269,30 @@
 - A **registry of error codes** (stable string codes, not raw prose) returned as `{code, message}`; codes are **documented + localized** (glossary) and **never renumbered** — clients depend on them.
 - Each code **maps deterministically to an HTTP status** (Part 34.AM/V); adding a code is a reviewed, versioned change.
 
+## BH. Rules-as-code (ITTF)
+- The **laws of the game** — scoring to **11 / 2-clear**, **service legality**, let, edge/net, **expedite**, racket-covering legality — live in **one versioned rules engine**, a single source of truth; **never magic numbers scattered in code**.
+- Each rule **cites its ITTF handbook clause**, is **tested against known cases**, and every **officiating call is derived from the engine** (explainable + reproducible), not hand-coded per feature (Part 21/25).
+
+## BI. Domain-knowledge versioning
+- Domain data that changes over time — **ITTF rules by year**, the **approved-equipment (LARC) list**, the ontology/glossary (Part 28) — is **versioned with effective dates**, never hardcoded.
+- An analysis records **which rule-year + equipment version** it used, so a past match stays **reproducible under the rules that applied then** (Part 34.AK/BE).
+
+## BJ. Synthetic & simulation data
+- Synthetic footage / sim data is **explicitly labeled and segregated** — it may train or smoke-test, but **never enters a real eval / golden set** (Part 29).
+- **Domain randomization** for robustness; the **sim-to-real gap is measured + tracked**, not assumed away (the repo's synthetic-video generator is dev/test-only).
+
+## BK. Match-event modeling (append-only)
+- Rallies, shots, bounces, and calls are an **immutable, append-only event log** with stable IDs + timestamps; **corrections are new events, never overwrites**.
+- The log is **replayable** to rebuild any derived artifact (Part 34.BE) and underpins **audit + officiating integrity** (Part 34.AK / Part 31).
+
+## BL. Product analytics & experimentation
+- Product events use a **typed taxonomy** — **no PII, consent-gated** (Part 34.AJ); analytics never become a backdoor around privacy.
+- Experiments / A-B are **pre-registered** (hypothesis + **guardrail metrics**), read with **statistical rigor** (no peeking); **never ship a change that quietly lowers accuracy or confidence-honesty** (Part 16/32.AC).
+
+## BM. Data retention & archival tiers
+- Match/video data moves **hot → warm → cold** with documented **retention + archival** (Part 31); archived data stays **restorable + tenant-scoped**.
+- **Legal-hold and RTBF override tiering**; storage growth is **governed, not unbounded** (Part 34.AS).
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
