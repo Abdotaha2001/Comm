@@ -124,6 +124,37 @@
 - **Fixtures/factories** for test data (no copy-paste); **mock external services**; **contract tests** for the API (provider/consumer).
 - Deterministic (fixed seeds); fast unit tests; integration tests on in-memory SQLite; the **golden set** is the accuracy gate (Part 29).
 
+## AA. Frontend & client conventions (Part 32)
+- **TypeScript strict**; components small & typed; **design tokens** (Part 32.R), never hard-coded colors/spacing. **No business logic in the UI** — it calls the API and renders the **reliability envelope**; it never recomputes confidence client-side.
+- **i18n in code:** every string via the glossary `canonical_id` (Part 28) — no literals in JSX; **true RTL** for Arabic (logical CSS props `inline-start/-end`, not `left/right`).
+- **Accessibility in code:** semantic HTML, keyboard focus order, ARIA labels, colour-blind-safe chart palettes — **WCAG 2.1 AA** asserted in component tests (Part 32.L).
+
+## AB. Containerization & environment parity
+- **Multi-stage Dockerfiles**; **digest-pinned** base images; run as **non-root**; only the venv + app in the final layer; `HEALTHCHECK` hits `/health`.
+- **Dev/prod parity** (12-factor): the *same* image dev→staging→prod, config via env only; **devcontainer / `make dev`** for one-command onboarding (Part 34.Y).
+- GPU images (Part 26 deep models) pin **CUDA/cuDNN**; the **CPU fallback** path stays runnable — the classical detector means the stack boots and serves without a GPU.
+
+## AC. Time, dates & units
+- **All timestamps UTC, ISO-8601, tz-aware** — never naive `datetime.now()`; localize only at the UI edge (Part 32.L). Durations in **seconds**; video positions as **frame index + fps**, never assume 30 fps.
+- **Physical units explicit & canonical:** SI internally (m, m/s, **rad/s** for spin), convert at the boundary; the **unit travels with the value** in the envelope — km/h vs m/s, rpm vs rad/s can never be confused (Part 10/29).
+
+## AD. Numerical & scientific computing (CV/physics)
+- **Determinism:** seed every RNG (`numpy`, models); the pipeline is reproducible (Part 13.4); pin BLAS threads where results must be bit-stable.
+- **Float discipline:** never `==` on floats — use tolerances; **guard NaN/inf** (occlusion, divide-by-zero in spin/curvature) and **abstain** instead of emitting garbage (Part 10).
+- **Vectorize** with numpy over Python loops on hot paths; **name physical constants** — gravity, ball mass/radius, drag/Magnus coefficients live in one constants module (no magic numbers, Part 19).
+
+## AE. Third-party adapters & SLOs
+- **Anti-corruption layer:** wrap every vendor (TTNet/YOLO weights, OCR, future LLM, S3, email/push) behind *our* interface — vendor types never leak across layers (Part 34.U); swapping a provider touches **one adapter**.
+- **SLOs + error budgets** per service (API latency, analysis turnaround, accuracy gate); **graceful degradation** — a down dependency drops to a lower **capture tier** / **abstain**, it never 500s the whole analysis (Part 10/13).
+
+## AF. Secrets & key management (runbook)
+- **No secrets in repo, CI logs, or images** (enforced by trufflehog, Part 31); secrets come from a vault/KMS, injected as env at runtime only.
+- **Rotation:** scheduled rotation for the JWT signing key, DB creds, and vendor API keys; **short-lived tokens**; support **two valid keys during rotation** (zero downtime); documented **break-glass + revoke** path (Part 31 incident response).
+
+## AG. Data migrations & backfills
+- **Schema vs data:** schema = Alembic (Part 34.D); **data backfills are separate, idempotent, resumable, batched** scripts (no giant single transaction) with a **dry-run** and a row-count reconciliation.
+- **Expand → migrate → contract** for breaking changes (add new · dual-write/backfill · switch reads · drop old) so deploys stay **zero-downtime and reversible**; every backfill is **logged + audited** (Part 31).
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
