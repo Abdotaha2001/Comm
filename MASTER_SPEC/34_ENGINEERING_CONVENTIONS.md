@@ -311,6 +311,19 @@
 - **Technical debt is tracked, not ignored:** `TODO(owner: ticket)`, a debt register, paid down on a cadence; **dead/commented-out code is removed**, not parked.
 - **Complexity budgets** enforced by lint (function length / cyclomatic complexity); **docs live next to the code**; a **per-PR preview environment** for review.
 
+## BQ. AI governance, ethics & contestability
+- **AI assists, humans decide** on high-stakes calls — officiating, medical/injury, selection: **human-in-the-loop + override** with an audit record (Part 34.AK/BH); **no autonomous high-stakes decision**.
+- Every automated judgment is **explainable + evidence-linked** (Part 10/11); **model cards state limitations + failure modes** (Part 29); each model has a **named accountable owner**, and a decision is **traceable to a model version**.
+- **Contestability:** a coach/player can challenge a rating/call and get **human review**; **acceptable-use** is enforced — no consent-less scouting, no betting-integrity abuse (Part 31/33).
+
+## BR. Data governance & stewardship
+- **Ownership is explicit:** the org is controller, the **player holds rights** (access/export/erasure, Part 31/32.Z); **data-sharing between federations/clubs** is scoped, agreement-backed, and **revocable**.
+- **A steward + catalog entry per dataset** (classification · owner · retention, Part 34.AJ/BM); **third-party / opponent footage** is used only with a **lawful basis** (Part 31).
+
+## BS. Compliance-as-code
+- Regulatory rules are **encoded + tested, not just documented:** **age-gating + guardian consent** enforced in code (Part 31/AJ); **DSAR / erasure flows** have automated paths.
+- **Audit-readiness:** the audit trail + provenance (Part 34.AK) satisfy an external auditor; **policy checks run in CI** (license, secrets, PII-in-logs); certification controls (SOC 2 / ISO 27001) **map to real controls in the codebase**, not a binder.
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
