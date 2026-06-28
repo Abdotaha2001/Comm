@@ -155,6 +155,38 @@
 - **Schema vs data:** schema = Alembic (Part 34.D); **data backfills are separate, idempotent, resumable, batched** scripts (no giant single transaction) with a **dry-run** and a row-count reconciliation.
 - **Expand → migrate → contract** for breaking changes (add new · dual-write/backfill · switch reads · drop old) so deploys stay **zero-downtime and reversible**; every backfill is **logged + audited** (Part 31).
 
+## AH. Input validation & boundary contracts
+- **Parse, don't validate:** every external input (body, query, upload, webhook, vendor response) is parsed into a **Pydantic** model at the edge; the inside of the app trusts only typed objects.
+- **Never trust the client for trust decisions:** tenant `org_id` and role come from the **token**, never the body (Part 31 AD); **reject unknown fields** (`extra="forbid"`) to kill mass-assignment.
+- **Validate at the boundary, fail with `422`**; bound every list/string/number (lengths, ranges, enums = `canonical_id`s) — no unbounded input reaches an engine or the DB.
+
+## AI. Media & upload handling (the video pipeline)
+- **Sniff content, don't trust extensions/filenames;** enforce **size + duration + codec** limits; **quarantine + malware-scan** before processing; **strip metadata** (EXIF/GPS) on ingest.
+- **Storage behind an interface** (local dir → S3) — callers never see paths; serve via **short-lived signed URLs**, never a raw user-controlled path (no path traversal, no SSRF on `source=url`, Part 31).
+- **Transcode/analyze in the worker, not the request;** persist the **input-quality report** (light/occlusion/fps) so the **reliability envelope** can down-weight bad footage (Part 10/32.K).
+
+## AJ. PII & privacy in code (Part 31)
+- **Field-level access in the serializer, not the UI:** medical/injury data is omitted server-side for coaches — RBAC decides shape, hiding is **hidden, not disabled**.
+- **Consent is a code gate:** no analysis of a **minor** without a valid guardian-consent record; processing checks consent + purpose, and **retention TTL jobs** delete/anonymize on expiry (RTBF cascades).
+- **Pseudonymize in logs & datasets:** IDs not names; training/eval data is de-identified; **no real player PII in the repo, fixtures, or CI** — synthetic only.
+
+## AK. Audit & provenance in code
+- **Every analysis run is reproducible:** persist **code SHA + model versions + params + seeds + capture tier** with the result (Part 10 provenance; "everything is a Model").
+- **Append-only audit trail** for sensitive actions — officiating override, consent change, role/RBAC change, data export/DSAR — recording **actor · org · timestamp · before/after**; audit logs are **immutable** and never carry secrets/PII payloads (Part 31).
+
+## AL. Reliability as a first-class return type
+- Estimators return the **envelope `{value, confidence, ci, tier, source, status}` or `abstain`** — never a bare float or a silent `None`; "preliminary" and "needs review" are **real states**, not nulls.
+- **Uncertainty propagates** through aggregation — don't average it away; a profile built from thin/low-confidence inputs stays low-confidence. **Thresholds are config**, not magic numbers (Part 29 gates).
+
+## AM. Error-handling philosophy
+- **No bare `except`**; catch narrow, **chain** (`raise NewError(...) from err`); never swallow an error into a default silently.
+- **Fail loud for programmer/contract errors** (bug → `500` + alert); **fail soft for data/vendor errors** — degrade a tier or **abstain**, don't crash the run (Part 34.AE).
+- **User-safe messages only** (`{code,message}`); full detail and stack live in **structured logs** with a correlation ID, never in the API response (Part 34.L).
+
+## AN. Equations & scientific provenance
+- **Every physics/stat formula cites its spec section + source** (Part 19 trajectory/Magnus · Part 20 biomechanics · Part 21 tactics) in the docstring, with **units stated**.
+- **No undocumented coefficient** (drag, Magnus, restitution, anthropometric ratios) — named, sourced, in one constants module; each model is **validated against a known/analytic case** in tests (Part 34.AD).
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
