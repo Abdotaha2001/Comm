@@ -207,6 +207,21 @@ Before the real session, record a **30-second test rally** and run the **input-q
 
 - A capture is **production-accepted only at the certification level whose KPIs all pass**; the level + the KPI snapshot are stored with the session (provenance, Part 34.AK) and surfaced in the reliability envelope (Part 10).
 
+## AK. Machine-readable acceptance framework (authoritative)
+The acceptance logic in Y–AJ is implemented as a **single source of truth** so documentation and code cannot diverge:
+
+| Artifact | Path | Role |
+|----------|------|------|
+| Schema (SoT) | `MASTER_SPEC/35_CAPTURE_ACCEPTANCE_SCHEMA.json` | versioned KPI table + certification levels + thresholds |
+| Engine | `backend/app/capture_quality.py` | `compute_cqs()` — gate logic, reliability envelope, provenance |
+| Operator checklist | `MASTER_SPEC/35_CAPTURE_ACCEPTANCE_CHECKLIST.csv` | **generated** from the schema |
+| Example report | `MASTER_SPEC/capture_quality_report.md` | **generated** from the schema |
+
+- **Certification = lowest required sub-score** (min gate), never an average; a single failed mandatory gate denies the level (Part 10 / 34.AL).
+- **Five levels:** Fail · Bronze (academy/T1) · Silver (production/T2) · Gold (competition/T3) · Platinum (officiating/T3). Platinum requires global shutter, sync ≤ 0.5 ms, 3D recon ≤ 5 mm, ground-truth + tamper-evidence + isolated network + versioned calibration + frame-accurate timestamps, and **zero failed mandatory KPI**.
+- **Outputs:** a `CQSResult` (certification · effective + overall score · per-KPI sub-scores · failed gates · warnings · recommended actions · reliability level), a **reliability envelope** (Part 10) and an immutable **provenance** record + hash (Part 34.AK).
+- **Consistency enforced in CI:** a test asserts the committed checklist regenerates from the schema; rebuild with `python -m app.capture_quality --generate`. The schema is **extensible + versioned** — add a KPI / sensor / tier / certification without a code change.
+
 ---
 
 ➡️ **NEXT FILE: `36_RISK_REGISTER_AND_ASSUMPTIONS.md`**

@@ -28,6 +28,7 @@ python -m app.benchmark         # accuracy harness (golden-set gate)
 - **Flow:** register → player → upload video → analyze (real OpenCV CV) → profile → opponent → matchup → game plan.
 - **CV:** pluggable `BallDetector` (`app/cv/`); deep models (TTNet/YOLO — Part 26) drop in. Scoreboard OCR + spin estimation included.
 - **Intelligence:** `app/analytics/` (rule-based, grounded in Part 21; LLM later).
+- **Capture acceptance:** `app/capture_quality.py` — schema-driven CQS + certification gates (min, no averaging), reliability envelope + provenance (Part 35; SoT in `MASTER_SPEC/35_CAPTURE_ACCEPTANCE_SCHEMA.json`).
 - **DB:** Alembic owns the schema (`migrations/`); ORM in `app/models.py` mirrors it.
 
 ## How to add things (the common cases)

@@ -1,0 +1,532 @@
+{
+  "framework": "TT-OS Capture Acceptance Framework",
+  "schema_version": "1.0.0",
+  "spec_part": "35",
+  "description": "Single source of truth for capture-quality acceptance. Shared by the Hardware SOP (Part 35), the backend (backend/app/capture_quality.py), quality reports, the reliability envelope (Part 10), provenance (Part 34.AK), and the operator dashboard (Part 32). Documentation and implementation must not diverge: the CSV checklist and example report are generated from this file.",
+  "philosophy": "Safety-critical / officiating. Certification is governed by the lowest required sub-score, never by a weighted average. A single mandatory gate in red, critical, or missing state denies the level regardless of all other scores. All thresholds are measurable with explicit units and pass/fail actions.",
+  "references": {
+    "Part 02": "capture tiers, calibration, multi-camera 3D & synchronisation",
+    "Part 10": "reliability envelope, confidence, abstain",
+    "Part 12": "data/ML infra, edge-to-cloud pipeline, calibration storage",
+    "Part 14": "integrations, audio, broadcast latency",
+    "Part 19": "trajectory/Magnus physics, units, court geometry",
+    "Part 20": "equipment, ball-vs-table contrast, lighting for the ball",
+    "Part 31": "security, officiating network isolation, tamper-evidence",
+    "Part 32": "operator dashboard, UX, offline capture",
+    "Part 34": "engineering conventions (AK provenance, AL reliability-as-type, AP drift, AS health, BA on-call)",
+    "Part 35": "Hardware & Capture SOP (sections A-AJ)"
+  },
+  "scoring": {
+    "method": "min_required_subscore",
+    "effective_score": "min(subscores of the mandatory KPIs for the awarded certification level)",
+    "overall_score": "mean(subscores of all measured KPIs) -- INFORMATIONAL ONLY, never used for certification",
+    "subscore_by_state": { "green": 1.0, "amber": 0.7, "red": 0.3, "critical": 0.0, "missing": 0.0 },
+    "gate_rule": "A mandatory KPI in red/critical/missing fails the gate and denies that certification level outright. No averaging can recover a failed gate.",
+    "level_award": "Evaluate levels platinum -> gold -> silver -> bronze; award the highest level whose mandatory gates all pass, hard requirements all hold, and effective_score >= the level's min_effective_score. If none pass, certification = fail."
+  },
+  "dashboard_states": ["green", "amber", "red", "critical"],
+  "severities": ["info", "warning", "major", "critical"],
+  "capture_tiers": {
+    "T1": { "name": "single camera 2D", "unlocks": "2D events, stats, scoreboard, coarse spin" },
+    "T2": { "name": "single camera + calibration", "unlocks": "metric placement, better speed/spin" },
+    "T3": { "name": "multi-camera true 3D", "unlocks": "true 3D, RPM, real spin" },
+    "T3_OFFICIATING": { "name": "multi-camera officiating grade", "unlocks": "decisive officiating (Part 35.T)" }
+  },
+  "reliability_mapping": {
+    "platinum": "verified",
+    "gold": "high",
+    "silver": "moderate",
+    "bronze": "preliminary",
+    "fail": "unreliable"
+  },
+  "certification_levels": {
+    "fail": { "rank": 0, "label": "not accepted", "tier": null, "min_effective_score": 0.0, "reliability": "unreliable", "mandatory_kpis": [] },
+    "bronze": {
+      "rank": 1, "label": "academy", "tier": "T1", "min_effective_score": 0.6, "reliability": "preliminary",
+      "mandatory_kpis": ["resolution", "frame_rate", "exposure_lock", "white_balance_lock", "lux", "ball_visibility", "tracking_success", "storage_health", "dropped_frames", "battery", "temperature", "metadata_completeness"]
+    },
+    "silver": {
+      "rank": 2, "label": "production", "tier": "T2", "min_effective_score": 0.7, "reliability": "moderate",
+      "mandatory_kpis": ["resolution", "frame_rate", "exposure_lock", "white_balance_lock", "lux", "ball_visibility", "tracking_success", "storage_health", "dropped_frames", "battery", "temperature", "metadata_completeness", "shutter", "motion_blur", "lens_calibration", "reprojection_error_px", "calibration_age", "camera_stability", "lighting_uniformity", "flicker", "color_temperature", "occlusion"]
+    },
+    "gold": {
+      "rank": 3, "label": "competition", "tier": "T3", "min_effective_score": 0.85, "reliability": "high",
+      "mandatory_kpis": ["resolution", "frame_rate", "exposure_lock", "white_balance_lock", "lux", "ball_visibility", "tracking_success", "storage_health", "dropped_frames", "battery", "temperature", "metadata_completeness", "shutter", "motion_blur", "lens_calibration", "reprojection_error_px", "calibration_age", "camera_stability", "lighting_uniformity", "flicker", "color_temperature", "occlusion", "synchronization_error", "time_synchronization", "camera_drift", "reconstruction_error_mm", "coverage_volume", "overlap_pct", "glare", "network_latency", "packet_loss", "jitter", "versioned_calibration", "provenance", "environmental_sensors"]
+    },
+    "platinum": {
+      "rank": 4, "label": "officiating", "tier": "T3_OFFICIATING", "min_effective_score": 0.95, "reliability": "verified",
+      "mandatory_kpis": ["resolution", "frame_rate", "exposure_lock", "white_balance_lock", "lux", "ball_visibility", "tracking_success", "storage_health", "dropped_frames", "battery", "temperature", "metadata_completeness", "shutter", "motion_blur", "lens_calibration", "reprojection_error_px", "calibration_age", "camera_stability", "lighting_uniformity", "flicker", "color_temperature", "occlusion", "synchronization_error", "time_synchronization", "camera_drift", "reconstruction_error_mm", "coverage_volume", "overlap_pct", "glare", "network_latency", "packet_loss", "jitter", "versioned_calibration", "provenance", "environmental_sensors", "global_shutter", "secure_network_isolation", "frame_accurate_timestamps", "tamper_evidence", "ground_truth_status"],
+      "hard_requirements": ["global_shutter", "secure_network_isolation", "frame_accurate_timestamps", "versioned_calibration", "tamper_evidence", "ground_truth_status", "provenance"],
+      "requirement_notes": { "synchronization_error": "<= 0.5 ms", "reconstruction_error_mm": "<= 5 mm", "policy": "any failed mandatory KPI denies Platinum immediately; no averaging" }
+    }
+  },
+  "kpis": [
+    {
+      "id": "resolution", "name": "Resolution", "category": "Camera",
+      "description": "Vertical pixel resolution of the recorded stream.",
+      "units": "px", "direction": "higher_is_better",
+      "threshold": 1080, "warning_threshold": 900, "critical_threshold": 720,
+      "pass_condition": ">= 1080 px", "fail_condition": "< 720 px",
+      "measurement_method": "stream metadata", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "block_session_start", "recommended_operator_action": "set camera to >= 1080p",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "frame_rate", "name": "Frame Rate", "category": "Camera",
+      "description": "Capture frame rate; ball tracking needs >= 120 fps.",
+      "units": "fps", "direction": "higher_is_better",
+      "threshold": 60, "warning_threshold": 50, "critical_threshold": 30,
+      "pass_condition": ">= 60 fps (>= 120 for Gold/Platinum)", "fail_condition": "< 30 fps",
+      "measurement_method": "stream metadata / frame-interval timing", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "stop_recording", "recommended_operator_action": "raise fps; reduce resolution if bandwidth-limited",
+      "auto_retry_allowed": true,
+      "certification_thresholds": {
+        "gold": { "threshold": 120, "warning_threshold": 100, "critical_threshold": 60 },
+        "platinum": { "threshold": 120, "warning_threshold": 120, "critical_threshold": 100 }
+      }
+    },
+    {
+      "id": "shutter", "name": "Shutter / Exposure Time", "category": "Camera",
+      "description": "Exposure (shutter) time; short shutter limits motion blur.",
+      "units": "ms", "direction": "lower_is_better",
+      "threshold": 1.0, "warning_threshold": 2.0, "critical_threshold": 4.0,
+      "pass_condition": "<= 1.0 ms (1/1000 s)", "fail_condition": "> 4.0 ms",
+      "measurement_method": "camera exposure setting", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "request_setting_change", "recommended_operator_action": "shorten shutter; add light to compensate",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "motion_blur", "name": "Motion Blur", "category": "Visibility",
+      "description": "Ball motion-blur length relative to apparent ball diameter (L = v*t).",
+      "units": "ball-diameter", "direction": "lower_is_better",
+      "threshold": 1.0, "warning_threshold": 1.5, "critical_threshold": 2.0,
+      "pass_condition": "<= 1.0 ball-diameter (<= 0.5 for Gold/Platinum)", "fail_condition": "> 2.0 ball-diameter",
+      "measurement_method": "blur-length estimate vs ball diameter on fast frames", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "request_setting_change", "recommended_operator_action": "shorten shutter / raise fps / add light",
+      "auto_retry_allowed": true,
+      "certification_thresholds": {
+        "gold": { "threshold": 0.5, "warning_threshold": 0.8, "critical_threshold": 1.0 },
+        "platinum": { "threshold": 0.5, "warning_threshold": 0.6, "critical_threshold": 0.8 }
+      }
+    },
+    {
+      "id": "exposure_lock", "name": "Exposure Lock", "category": "Camera",
+      "description": "Manual exposure is locked for the session (no auto drift).",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "locked == true", "fail_condition": "auto-exposure active",
+      "measurement_method": "camera control state", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "request_setting_change", "recommended_operator_action": "disable auto-exposure; lock manual exposure",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "white_balance_lock", "name": "White Balance Lock", "category": "Camera",
+      "description": "White balance is locked to a measured colour temperature.",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "locked == true", "fail_condition": "auto-WB active",
+      "measurement_method": "camera control state", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "request_setting_change", "recommended_operator_action": "lock WB to measured CCT",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "lens_calibration", "name": "Lens Calibration", "category": "Calibration",
+      "description": "Valid intrinsic + distortion calibration (Brown-Conrady/OpenCV) is loaded.",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "valid calibration present", "fail_condition": "missing/expired calibration",
+      "measurement_method": "calibration record validity (Part 35.AH)", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "force_recalibration", "recommended_operator_action": "run lens calibration (>= 20 views)",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "reprojection_error_px", "name": "Reprojection Error (2D)", "category": "Calibration",
+      "description": "RMS reprojection error from intrinsic calibration.",
+      "units": "px", "direction": "lower_is_better",
+      "threshold": 1.0, "warning_threshold": 1.5, "critical_threshold": 2.0,
+      "pass_condition": "<= 1.0 px (<= 0.5 for Gold/Platinum)", "fail_condition": "> 2.0 px",
+      "measurement_method": "checkerboard/ChArUco RMS reprojection (Part 35.Y)", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "force_recalibration", "recommended_operator_action": "recalibrate intrinsics",
+      "auto_retry_allowed": false,
+      "certification_thresholds": {
+        "gold": { "threshold": 0.5, "warning_threshold": 0.8, "critical_threshold": 1.0 },
+        "platinum": { "threshold": 0.5, "warning_threshold": 0.7, "critical_threshold": 1.0 }
+      }
+    },
+    {
+      "id": "reconstruction_error_mm", "name": "3D Reconstruction Error", "category": "Calibration",
+      "description": "3D reconstruction error of a known-length reference through the capture volume.",
+      "units": "mm", "direction": "lower_is_better",
+      "threshold": 10.0, "warning_threshold": 15.0, "critical_threshold": 25.0,
+      "pass_condition": "<= 10 mm (<= 5 mm for Platinum)", "fail_condition": "> 25 mm",
+      "measurement_method": "known-bar sweep / table geometry triangulation (Part 35.AE)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "force_recalibration", "recommended_operator_action": "recalibrate extrinsics; verify overlap",
+      "auto_retry_allowed": false,
+      "certification_thresholds": {
+        "platinum": { "threshold": 5.0, "warning_threshold": 8.0, "critical_threshold": 12.0 }
+      }
+    },
+    {
+      "id": "calibration_age", "name": "Calibration Age", "category": "Calibration",
+      "description": "Time since the active calibration was captured/validated.",
+      "units": "hours", "direction": "lower_is_better",
+      "threshold": 24.0, "warning_threshold": 72.0, "critical_threshold": 168.0,
+      "pass_condition": "<= 24 h", "fail_condition": "> 168 h (1 week)",
+      "measurement_method": "calibration record timestamp (Part 35.AH)", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "force_recalibration", "recommended_operator_action": "recalibrate before session",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "synchronization_error", "name": "Synchronization Error", "category": "Synchronization",
+      "description": "Max pairwise inter-camera time offset.",
+      "units": "ms", "direction": "lower_is_better",
+      "threshold": 8.0, "warning_threshold": 12.0, "critical_threshold": 16.0,
+      "pass_condition": "<= 1 frame (Silver) / <= 1 ms (Gold) / <= 0.5 ms (Platinum)", "fail_condition": "> 16 ms",
+      "measurement_method": "PTP/genlock offset probe or clap-sync residual (Part 35.AA)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "resync_cameras", "recommended_operator_action": "re-sync (PTP/genlock); verify drift",
+      "auto_retry_allowed": true,
+      "certification_thresholds": {
+        "gold": { "threshold": 1.0, "warning_threshold": 2.0, "critical_threshold": 8.0 },
+        "platinum": { "threshold": 0.5, "warning_threshold": 1.0, "critical_threshold": 2.0 }
+      }
+    },
+    {
+      "id": "time_synchronization", "name": "Time Synchronization", "category": "Synchronization",
+      "description": "Clocks locked to a reference (NTP/PTP) for trustworthy timestamps.",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "locked == true", "fail_condition": "clock unlocked/free-running",
+      "measurement_method": "NTP/PTP lock status (Part 35.L)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "resync_cameras", "recommended_operator_action": "restore NTP/PTP lock",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "frame_accurate_timestamps", "name": "Frame-Accurate Timestamps", "category": "Synchronization",
+      "description": "Each frame carries a frame-accurate, monotonic timestamp (officiating).",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "frame-accurate == true", "fail_condition": "missing/estimated timestamps",
+      "measurement_method": "per-frame timestamp audit", "priority": "mandatory",
+      "required_tier": "T3_OFFICIATING", "certification_dependency": ["platinum"],
+      "automatic_fail_action": "deny_officiating", "recommended_operator_action": "enable hardware timestamping",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "camera_drift", "name": "Camera Drift", "category": "Calibration",
+      "description": "In-session drift of calibration residual (bump/zoom/thermal).",
+      "units": "px", "direction": "lower_is_better",
+      "threshold": 1.0, "warning_threshold": 2.0, "critical_threshold": 3.0,
+      "pass_condition": "<= 1.0 px", "fail_condition": "> 3.0 px",
+      "measurement_method": "periodic residual re-check (Part 35.AH)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "force_recalibration", "recommended_operator_action": "recalibrate; secure mounts",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "dropped_frames", "name": "Dropped Frames", "category": "Camera",
+      "description": "Percentage of frames dropped during capture.",
+      "units": "%", "direction": "lower_is_better",
+      "threshold": 0.1, "warning_threshold": 0.5, "critical_threshold": 1.0,
+      "pass_condition": "< 0.1 %", "fail_condition": ">= 1.0 %",
+      "measurement_method": "capture pipeline frame accounting", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "stop_recording", "recommended_operator_action": "use faster media; check cooling/bandwidth",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "lighting_uniformity", "name": "Lighting Uniformity", "category": "Lighting",
+      "description": "Min/avg illuminance ratio across the table.",
+      "units": "ratio", "direction": "higher_is_better",
+      "threshold": 0.7, "warning_threshold": 0.6, "critical_threshold": 0.5,
+      "pass_condition": ">= 0.7 (>= 0.8 Gold)", "fail_condition": "< 0.5",
+      "measurement_method": "multi-point lux sampling (Part 35.AC)", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "request_lighting", "recommended_operator_action": "add/relocate lights for even coverage",
+      "auto_retry_allowed": true,
+      "certification_thresholds": { "gold": { "threshold": 0.8, "warning_threshold": 0.7, "critical_threshold": 0.6 } }
+    },
+    {
+      "id": "lux", "name": "Illuminance (Lux)", "category": "Lighting",
+      "description": "Illuminance at the table surface.",
+      "units": "lux", "direction": "higher_is_better",
+      "threshold": 500, "warning_threshold": 400, "critical_threshold": 300,
+      "pass_condition": ">= 500 (Bronze) / 800 (Silver) / 1000 (Gold)", "fail_condition": "< 300 lux",
+      "measurement_method": "lux meter at table centre (Part 35.AC)", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "request_lighting", "recommended_operator_action": "increase lighting",
+      "auto_retry_allowed": true,
+      "certification_thresholds": {
+        "silver": { "threshold": 800, "warning_threshold": 650, "critical_threshold": 500 },
+        "gold": { "threshold": 1000, "warning_threshold": 800, "critical_threshold": 650 }
+      }
+    },
+    {
+      "id": "flicker", "name": "Flicker", "category": "Lighting",
+      "description": "Percent flicker of the light source within the capture band.",
+      "units": "%", "direction": "lower_is_better",
+      "threshold": 5.0, "warning_threshold": 8.0, "critical_threshold": 12.0,
+      "pass_condition": "< 5 %", "fail_condition": ">= 12 %",
+      "measurement_method": "high-fps flicker analysis / flicker meter (Part 35.AC)", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "request_lighting", "recommended_operator_action": "use high-CRI continuous light; match shutter to mains",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "glare", "name": "Glare-Free Table", "category": "Lighting",
+      "description": "No disqualifying specular hot-spots on the table/ball path.",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "glare_free == true", "fail_condition": "specular hot-spots present",
+      "measurement_method": "highlight-region inspection", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "request_lighting", "recommended_operator_action": "diffuse/reangle lights; matte surfaces",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "color_temperature", "name": "Color Temperature Deviation", "category": "Lighting",
+      "description": "Absolute deviation of measured CCT from the calibrated target.",
+      "units": "K", "direction": "lower_is_better",
+      "threshold": 300, "warning_threshold": 500, "critical_threshold": 800,
+      "pass_condition": "<= 300 K from target", "fail_condition": "> 800 K",
+      "measurement_method": "reference chart / colour meter (Part 35.AB)", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "request_setting_change", "recommended_operator_action": "re-measure WB; stabilise lighting CCT",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "occlusion", "name": "Occlusion", "category": "Visibility",
+      "description": "Max single-zone occlusion of the ball/play volume.",
+      "units": "%", "direction": "lower_is_better",
+      "threshold": 10.0, "warning_threshold": 15.0, "critical_threshold": 25.0,
+      "pass_condition": "< 10 %", "fail_condition": ">= 25 %",
+      "measurement_method": "occlusion heatmap accumulation (Part 35.AD)", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "request_reposition", "recommended_operator_action": "raise/re-aim camera; add a second view",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "ball_visibility", "name": "Ball Visibility", "category": "Visibility",
+      "description": "Fraction of expected trajectory frames where the ball is detectable.",
+      "units": "%", "direction": "higher_is_better",
+      "threshold": 90.0, "warning_threshold": 85.0, "critical_threshold": 80.0,
+      "pass_condition": ">= 90 % (>= 95 Gold)", "fail_condition": "< 80 %",
+      "measurement_method": "detector hit-rate over rally (Part 35.AD)", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "request_reposition", "recommended_operator_action": "improve contrast/angle/lighting",
+      "auto_retry_allowed": true,
+      "certification_thresholds": { "gold": { "threshold": 95.0, "warning_threshold": 90.0, "critical_threshold": 85.0 } }
+    },
+    {
+      "id": "tracking_success", "name": "Tracking Success", "category": "Visibility",
+      "description": "Trajectory tracking continuity over rallies.",
+      "units": "%", "direction": "higher_is_better",
+      "threshold": 90.0, "warning_threshold": 85.0, "critical_threshold": 80.0,
+      "pass_condition": ">= 90 % (>= 95 Gold)", "fail_condition": "< 80 %",
+      "measurement_method": "tracker continuity over rally (Part 35.AD)", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "request_reposition", "recommended_operator_action": "reduce occlusion; raise fps",
+      "auto_retry_allowed": true,
+      "certification_thresholds": { "gold": { "threshold": 95.0, "warning_threshold": 90.0, "critical_threshold": 85.0 } }
+    },
+    {
+      "id": "storage_health", "name": "Storage Health", "category": "System",
+      "description": "Free capture storage headroom (and adequate write speed).",
+      "units": "%", "direction": "higher_is_better",
+      "threshold": 20.0, "warning_threshold": 10.0, "critical_threshold": 5.0,
+      "pass_condition": ">= 20 % free", "fail_condition": "< 5 % free",
+      "measurement_method": "media free-space + write-speed probe (Part 35.M)", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "block_session_start", "recommended_operator_action": "free/replace media before session",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "battery", "name": "Battery", "category": "System",
+      "description": "Battery headroom for the planned session length.",
+      "units": "%", "direction": "higher_is_better",
+      "threshold": 30.0, "warning_threshold": 20.0, "critical_threshold": 10.0,
+      "pass_condition": ">= 30 %", "fail_condition": "< 10 %",
+      "measurement_method": "device battery telemetry (Part 35.L)", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "request_power", "recommended_operator_action": "connect mains/UPS; charge devices",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "temperature", "name": "Sensor Temperature", "category": "System",
+      "description": "Camera sensor/body temperature (thermal throttling risk).",
+      "units": "C", "direction": "lower_is_better",
+      "threshold": 60.0, "warning_threshold": 65.0, "critical_threshold": 75.0,
+      "pass_condition": "< 60 C", "fail_condition": ">= 75 C",
+      "measurement_method": "camera thermal telemetry (Part 35.AF)", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "pause_recording", "recommended_operator_action": "cooling break; improve ventilation",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "camera_stability", "name": "Camera Stability", "category": "System",
+      "description": "Residual mount vibration / frame jitter.",
+      "units": "px", "direction": "lower_is_better",
+      "threshold": 1.0, "warning_threshold": 2.0, "critical_threshold": 4.0,
+      "pass_condition": "<= 1.0 px jitter", "fail_condition": "> 4.0 px",
+      "measurement_method": "static-feature jitter estimate", "priority": "mandatory",
+      "required_tier": "T2", "certification_dependency": ["silver", "gold", "platinum"],
+      "automatic_fail_action": "request_reposition", "recommended_operator_action": "stabilise tripod/mount; isolate vibration",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "coverage_volume", "name": "Coverage Volume", "category": "Coverage",
+      "description": "Percentage of the play volume seen by >= 2 cameras.",
+      "units": "%", "direction": "higher_is_better",
+      "threshold": 100.0, "warning_threshold": 98.0, "critical_threshold": 95.0,
+      "pass_condition": "100 % double-covered", "fail_condition": "< 95 %",
+      "measurement_method": "capture-volume validation sweep (Part 35.AE)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "request_reposition", "recommended_operator_action": "re-aim/add cameras to cover volume",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "overlap_pct", "name": "Multi-Camera Overlap", "category": "Coverage",
+      "description": "FOV overlap between adjacent cameras.",
+      "units": "%", "direction": "higher_is_better",
+      "threshold": 50.0, "warning_threshold": 40.0, "critical_threshold": 30.0,
+      "pass_condition": ">= 50 %", "fail_condition": "< 30 %",
+      "measurement_method": "extrinsic FOV overlap estimate (Part 35.AE)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "request_reposition", "recommended_operator_action": "increase camera overlap",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "network_latency", "name": "Network Latency", "category": "Network",
+      "description": "Glass-to-decision live latency.",
+      "units": "ms", "direction": "lower_is_better",
+      "threshold": 200.0, "warning_threshold": 300.0, "critical_threshold": 400.0,
+      "pass_condition": "< 200 ms (< 100 ms officiating)", "fail_condition": ">= 400 ms",
+      "measurement_method": "live latency probe (Part 35.AG)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "switch_offline_buffer", "recommended_operator_action": "fix network; fall back to offline buffer",
+      "auto_retry_allowed": true,
+      "certification_thresholds": { "platinum": { "threshold": 100.0, "warning_threshold": 150.0, "critical_threshold": 250.0 } }
+    },
+    {
+      "id": "packet_loss", "name": "Packet Loss", "category": "Network",
+      "description": "Capture-stream packet loss.",
+      "units": "%", "direction": "lower_is_better",
+      "threshold": 0.1, "warning_threshold": 0.5, "critical_threshold": 1.0,
+      "pass_condition": "< 0.1 %", "fail_condition": ">= 1.0 %",
+      "measurement_method": "transport stats (Part 35.AG)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "switch_offline_buffer", "recommended_operator_action": "stabilise link; use wired/edge buffer",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "jitter", "name": "Jitter", "category": "Network",
+      "description": "Inter-packet delay variation.",
+      "units": "ms", "direction": "lower_is_better",
+      "threshold": 10.0, "warning_threshold": 20.0, "critical_threshold": 40.0,
+      "pass_condition": "< 10 ms", "fail_condition": ">= 40 ms",
+      "measurement_method": "transport stats (Part 35.AG)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "switch_offline_buffer", "recommended_operator_action": "stabilise link; use edge buffer",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "secure_network_isolation", "name": "Secure Network Isolation", "category": "Network",
+      "description": "Officiating systems on an isolated/air-gapped segment with no internet egress.",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "isolated == true", "fail_condition": "open/internet-reachable",
+      "measurement_method": "network topology / egress check (Part 31)", "priority": "mandatory",
+      "required_tier": "T3_OFFICIATING", "certification_dependency": ["platinum"],
+      "automatic_fail_action": "deny_officiating", "recommended_operator_action": "move to isolated VLAN/air-gap; allow-list peers",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "metadata_completeness", "name": "Metadata Completeness", "category": "Metadata",
+      "description": "Required session metadata present (Part 35.K).",
+      "units": "%", "direction": "higher_is_better",
+      "threshold": 100.0, "warning_threshold": 95.0, "critical_threshold": 90.0,
+      "pass_condition": "100 % required fields", "fail_condition": "< 90 %",
+      "measurement_method": "metadata field audit", "priority": "mandatory",
+      "required_tier": "T1", "certification_dependency": ["bronze", "silver", "gold", "platinum"],
+      "automatic_fail_action": "block_session_start", "recommended_operator_action": "complete session metadata",
+      "auto_retry_allowed": true
+    },
+    {
+      "id": "provenance", "name": "Provenance Record", "category": "Metadata",
+      "description": "Provenance record present and valid (Part 34.AK).",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "provenance valid", "fail_condition": "missing/invalid",
+      "measurement_method": "provenance hash + record check", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "deny_certification", "recommended_operator_action": "ensure provenance capture is enabled",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "tamper_evidence", "name": "Tamper Evidence", "category": "Metadata",
+      "description": "Tamper-evident evidence chain (hashing/signing) for officiating.",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "evidence chain intact", "fail_condition": "absent/broken chain",
+      "measurement_method": "evidence-chain hash verification (Part 31)", "priority": "mandatory",
+      "required_tier": "T3_OFFICIATING", "certification_dependency": ["platinum"],
+      "automatic_fail_action": "deny_officiating", "recommended_operator_action": "enable tamper-evident recording",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "ground_truth_status", "name": "Ground-Truth Status", "category": "Officiating",
+      "description": "Ground-truth validated against reference measurements (<= 5 mm).",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "validated == true", "fail_condition": "not validated / out of tolerance",
+      "measurement_method": "reference reconstruction vs truth (Part 35.AH)", "priority": "mandatory",
+      "required_tier": "T3_OFFICIATING", "certification_dependency": ["platinum"],
+      "automatic_fail_action": "deny_officiating", "recommended_operator_action": "run ground-truth validation",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "versioned_calibration", "name": "Versioned Calibration", "category": "Calibration",
+      "description": "Active calibration is an immutable, versioned, provenance-stamped record.",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "versioned record present", "fail_condition": "ad-hoc/unversioned calibration",
+      "measurement_method": "calibration record version check (Part 35.AH)", "priority": "mandatory",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "force_recalibration", "recommended_operator_action": "store calibration as a versioned record",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "global_shutter", "name": "Global Shutter", "category": "Camera",
+      "description": "Global-shutter sensor (rolling shutter not eligible for officiating).",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "global_shutter == true", "fail_condition": "rolling shutter",
+      "measurement_method": "camera spec / RS profile (Part 35.Z)", "priority": "mandatory",
+      "required_tier": "T3_OFFICIATING", "certification_dependency": ["platinum"],
+      "automatic_fail_action": "deny_officiating", "recommended_operator_action": "use global-shutter cameras for officiating",
+      "auto_retry_allowed": false
+    },
+    {
+      "id": "environmental_sensors", "name": "Environmental Sensors", "category": "Environment",
+      "description": "Temperature/humidity captured to feed aero priors (Part 19).",
+      "units": "boolean", "direction": "boolean",
+      "threshold": true, "warning_threshold": null, "critical_threshold": null,
+      "pass_condition": "sensors present == true", "fail_condition": "no environmental data",
+      "measurement_method": "environmental sensor presence (Part 35.N/O)", "priority": "recommended",
+      "required_tier": "T3", "certification_dependency": ["gold", "platinum"],
+      "automatic_fail_action": "warn_only", "recommended_operator_action": "attach temp/humidity sensors or log manually",
+      "auto_retry_allowed": true
+    }
+  ]
+}
