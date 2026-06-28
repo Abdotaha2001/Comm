@@ -45,6 +45,46 @@
 ## I. Security defaults (always on)
 - Deny-by-default RBAC; org-scoped queries; no secrets in code/logs; validate & sandbox uploads; never log PII/tokens (Part 31).
 
+## J. Tooling & dependencies
+- **Format/lint/type:** `ruff` + `black` + `isort` + **`mypy`**, enforced by **pre-commit** and CI.
+- **Dependencies:** pinned + a lockfile; isolated virtualenv; scheduled vuln-scanned updates (Part 31).
+
+## K. Configuration (12-factor)
+- Config from **env / `pydantic-settings`** only — **no hardcoded config or secrets**; fail-fast on bad/missing prod config (e.g. the JWT-secret guard).
+
+## L. Logging, errors & observability
+- **Structured logs** (JSON) with **correlation IDs**; levels used correctly; **never log PII/tokens**.
+- **Custom exception types** → mapped to the right HTTP code centrally (no leaking stack traces).
+- Expose **health/readiness**, metrics, and traces (OpenTelemetry) — Part 13.
+
+## M. Performance & concurrency
+- Avoid **N+1 queries**; index hot paths; **paginate** lists; cache where safe.
+- **Async I/O** for network/DB in the API; CPU/GPU work in workers (Part 13). Worker code is **thread-safe**; the analysis pipeline is **deterministic** (fixed seeds — Part 13.4).
+
+## N. Versioning & compatibility
+- **SemVer** for the package; **`/v1`** for the API. **Changelog** maintained.
+- **Deprecation policy** (announce → grace period → remove); **migrations are backward-compatible & reversible** — no destructive change without a backup/expand-contract.
+
+## O. Documentation & decisions
+- Module docstrings + a README per package; **OpenAPI is the API contract** (keep it in sync).
+- **ADRs** (Architecture Decision Records) for significant choices — short, dated, with context + consequences.
+
+## P. Branching, commits & review
+- Short-lived **feature branches** off the dev branch; **small PRs**.
+- **Conventional-style commits** with a clear body; keep the project's **co-author / session footer**.
+- PRs need green CI + at least one review; **CODEOWNERS** for sensitive areas (auth, officiating, migrations).
+
+## Q. Testing depth
+- Types: **unit · integration · e2e**; coverage target ~**80%** on logic (not a vanity 100%).
+- **Property-based tests** for CV/math (e.g. spin on generated arcs); deterministic, **no flaky** tests; clean, isolated test data.
+
+## R. CI/CD & environments
+- Pipeline gates: **lint + type + tests + secret-scan + golden-set** must pass to merge.
+- Environments **dev → staging → prod**; migrations run before deploy; **documented rollback**.
+
+## S. MLOps conventions (ties Part 12)
+- **Model registry** + **experiment tracking**; **reproducible training** (seeds, pinned data); **datasets versioned** (DVC). A model ships only with its **eval report + model card** (Part 29).
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
