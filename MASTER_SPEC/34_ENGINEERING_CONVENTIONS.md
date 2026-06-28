@@ -217,6 +217,31 @@
 - **Every env var documented + validated at boot** (fail-fast, like the JWT-secret guard) with safe defaults; config is typed (`pydantic-settings`), never read ad-hoc.
 - **Feature flags** for risky/gradual rollout and **kill-switches** (deep models, LLM, officiating); flags are typed, **default-off**, and **removed after rollout** — no permanent flags rotting in the code (Part 34.Y).
 
+## AV. Mobile & offline-first (player app)
+- **Offline capture → local queue → later sync** (Part 32.P); sync is **idempotent** with explicit **conflict resolution** — the **server is authority** for scores/profiles, the client never wins a merge silently.
+- **Budgets:** battery, storage, and data-usage caps for self-recording; **OTA-updatable**; deep links + a managed **push-token lifecycle**.
+- The **same reliability envelope** renders on mobile — a thin-data number is "preliminary" on the phone too, never a bare value.
+
+## AW. On-device / edge inference
+- On-device models (Part 35 capture) are **quantized + size-budgeted**, with a **graceful fallback to the server** when the device can't run them.
+- On-device results are **tagged a lower capture tier** and **re-verified server-side** before they harden a profile; **no PII leaves the device** without consent (Part 34.AJ).
+
+## AX. Multi-tenancy depth & isolation testing
+- Beyond org-scoping: a **mandatory cross-tenant test per resource** — org A must get **`404`** on org B's data; an unscoped query **fails review** (the non-negotiable from `CLAUDE.md`).
+- **Per-tenant limits/config**; **tenant lifecycle is first-class** — create · suspend · **export** · delete-with-cascade (RTBF) — none of it leaks across orgs (Part 31).
+
+## AY. Data pipeline & lineage (the ML data plane)
+- Staged **raw → curated → features → train/eval**, each stage **immutable + versioned** (DVC, Part 34.S); **lineage tracked** — which clips/labels produced which model (Part 34.AK).
+- **No split leakage:** train/test are **player-disjoint**; **PII is de-identified before it enters the plane** (Part 34.AJ); a dataset ships with a **datasheet** (Part 29/30).
+
+## AZ. Resilience & chaos testing
+- **Test the degrade/abstain paths, not just the happy path:** inject vendor / DB / GPU failures and assert the system **drops a tier or abstains** — never `500`s the run or fabricates a number (Part 10/34.AE).
+- **Load / soak / stress** before any scale claim; **restore-from-backup is tested**, not assumed (Part 31 BCDR).
+
+## BA. On-call, runbooks & postmortems
+- Each service ships a **runbook** (symptoms → checks → fixes) and an **owner** (CODEOWNERS, Part 34.P); alerts are **actionable + tied to SLOs** — no alert spam.
+- Incidents get a **blameless postmortem** with tracked action items (Part 31 incident response); recurring toil becomes a backlog item, not a habit.
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
