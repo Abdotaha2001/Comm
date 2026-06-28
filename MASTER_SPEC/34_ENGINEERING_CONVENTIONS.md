@@ -85,6 +85,45 @@
 ## S. MLOps conventions (ties Part 12)
 - **Model registry** + **experiment tracking**; **reproducible training** (seeds, pinned data); **datasets versioned** (DVC). A model ships only with its **eval report + model card** (Part 29).
 
+## T. Naming conventions (concrete)
+| Thing | Style | Example |
+|-------|-------|---------|
+| files/modules | `snake_case` | `opponent_dossier.py` |
+| classes | `PascalCase` | `BallDetector` |
+| funcs/vars | `snake_case` | `aggregate_profile` |
+| constants | `UPPER_SNAKE` | `MIN_SAMPLE` |
+| DB tables/cols | `snake_case`, plural tables | `player_profiles.style_class` |
+| API paths | plural nouns | `/v1/players/{id}` |
+| env vars | `UPPER_SNAKE` | `JWT_SECRET` |
+| domain values | `canonical_id` (Part 28) | `banana_flick` |
+
+## U. Module boundaries & layering
+- Layering: **routers → engines (cv/analytics) → models**; **never** the reverse. Routers don't import each other; **analytics never imports routers/DB session** (pure functions take data in).
+- **No circular imports**; shared helpers live in a low-level module. Vendor types are wrapped, not leaked across layers.
+
+## V. API design depth
+- **Idempotency-Key** on create-side POSTs (analyze, game-plan); **cursor pagination** + consistent `limit`/`after`; standard `filter`/`sort` params.
+- Correct **HTTP semantics** (`201` create, `204` no-content, `409` conflict); consistent error body `{code,message}`; the **reliability envelope** on measured values.
+
+## W. Database conventions
+- **Every table:** UUID pk, `created_at` (+ `updated_at` where mutable), all times **UTC / `timestamptz`**.
+- Explicit **FK on-delete** (`CASCADE`/`SET NULL`); index every FK + hot filter; **soft-delete** (status/archived) for user data, hard-delete only via RTBF.
+- Keep business logic in the app, not the DB; **short transactions**; migrations expand-contract (Part 34.N).
+
+## X. Background jobs, resilience & caching
+- Jobs are **idempotent** (safe to retry), with **retries + backoff**, a **dead-letter** path, and a visible status.
+- External calls get **timeouts + retries-with-backoff + circuit breakers**; never block the request thread on them.
+- **Caching:** explicit keys + invalidation; never cache authz decisions or PII.
+
+## Y. Dev workflow
+- **Definition of Ready** (clear scope + acceptance + test plan) before work; **Definition of Done** (Part 34.H) before merge.
+- **Review checklist:** correctness · tests · reliability/RBAC · migration safety · no secrets/PII · docs/glossary.
+- **Onboarding:** one-command setup (`make dev` / devcontainer); **comments explain *why*** not *what*; `TODO(owner: …)` with a ticket. **Feature flags** for risky/gradual rollout.
+
+## Z. Test conventions
+- **Fixtures/factories** for test data (no copy-paste); **mock external services**; **contract tests** for the API (provider/consumer).
+- Deterministic (fixed seeds); fast unit tests; integration tests on in-memory SQLite; the **golden set** is the accuracy gate (Part 29).
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
