@@ -111,4 +111,102 @@ Before the real session, record a **30-second test rally** and run the **input-q
 
 ---
 
+# Enterprise SOP extension (Y–AJ)
+
+> Sections Y–AJ raise this SOP to production/officiating grade (comparable to pro vision systems). Every check below has a **measured threshold + pass/fail** and maps to a **certification level** (Part 35.AJ). Numbers are acceptance gates, not aspirations.
+
+## Y. Camera intrinsics & lens-distortion model
+- **Model:** OpenCV/Brown–Conrady — radial `k1,k2,k3` + tangential `p1,p2` (add rational `k4,k5,k6` and thin-prism `s1–s4` only for wide/fisheye); persist the full **3×3 intrinsic matrix `K`** + coefficients per camera (Part 02).
+- **Procedure:** ChArUco/checkerboard, **≥ 20 views** spanning all four corners + centre at varied distance/tilt; iterate to convergence.
+- **Pass/fail:** **RMS reprojection error ≤ 0.5 px (Gold/Platinum), ≤ 1.0 px (Silver), ≤ 1.5 px (Bronze)**; per-view max ≤ 1.5 px; undistort-and-remeasure a straight edge → residual curvature **≤ 0.3 px**. Coefficients stored in the versioned calibration record (Part 35.AH).
+
+## Z. Rolling-shutter profiling (non-global-shutter cameras)
+- **Characterise** each CMOS sensor's **line readout time** (µs/line) and total frame readout (ms); store a per-camera RS profile (phones must carry one, Part 02).
+- **Correction:** apply RS de-skew from the profile **before** triangulation/physics (Part 19); keep the ball **mid-frame**, avoid fast pans.
+- **Pass/fail:** readout time known to **±5%**; residual RS skew on a vertical reference at match ball-speed **≤ 1.0 px** after correction. **T3 officiating requires a global shutter** — rolling shutter is **not eligible for Platinum**.
+
+## AA. Synchronisation validation & drift thresholds
+- **Preference:** hardware **genlock / PTP (IEEE-1588)** > embedded timecode > software clap/flash (Part 02 / 35.E). Always **measure** the offset.
+- **Acceptance (max pairwise inter-camera offset):** **Platinum ≤ 0.5 ms · Gold ≤ 1 ms · Silver ≤ 1 frame (≤ 8 ms @120 fps)**; PTP grandmaster sync error **< 100 µs**.
+- **Drift:** monitor continuously; **re-sync if drift > 0.5 frame (or > 1 ms for officiating)** within a session; log every check (Part 35.AH). Fail → 3D + officiating outputs **abstain** (Part 10).
+
+## AB. Exposure, white-balance, colour & dynamic range
+- **Lock for the session:** manual **exposure**, fixed **ISO/gain** (lowest viable), **white-balance locked to measured CCT** — no auto drift mid-rally.
+- **Colour calibration:** shoot a **24-patch reference chart (e.g. X-Rite ColorChecker)** at setup; build/verify a colour profile; **mean ΔE2000 < 3 (Gold), < 5 (Silver)**; WB error **< 200 K** (Part 20).
+- **Shutter:** **≤ 1/1000 s** for 120 fps ball tracking (motion-blur, Part 35.AD); anti-flicker, mains-locked (Part 35.AC).
+- **Dynamic range:** **< 1% clipped highlights and < 1% crushed blacks** on the ball/table region; log/HDR profile for high-contrast venues; the ball must stay separable from background.
+
+## AC. Lighting QA (automatic, per session)
+| Metric | Method | Pass / fail |
+|--------|--------|-------------|
+| **Illuminance** | lux meter at table | ≥ 1000 lux (Gold/officiating) · ≥ 800 (Silver) · ≥ 500 (Bronze) |
+| **Uniformity** | min/avg over table | ≥ 0.8 (Gold) · ≥ 0.7 (Silver) |
+| **Flicker** | high-fps / flicker meter | **percent-flicker < 5%**, flicker index < 0.1, no PWM in capture band |
+| **CCT** | reference chart | consistent **± 300 K** across the table |
+| **CRI** | luminaire spec/meter | ≥ 90 (colour tasks) · ≥ 80 min |
+| **Glare** | inspection | no specular hot-spots on the table |
+- Below Bronze → the input-quality gate **blocks recording** (Part 10 / 35.I). Drives ball-vs-table contrast (Part 20).
+
+## AD. Motion-blur, ball-visibility & occlusion metrics
+- **Motion-blur length** `L_blur(px) = v_ball(px/s) × t_exposure(s)`; **accept ≤ 0.5 × ball-Ø (Gold), ≤ 1.0 × (Silver)** — else raise shutter/light or fps (Part 19).
+- **Ball visibility:** apparent **diameter ≥ 12 px (Gold), ≥ 8 px (min)**; **Weber contrast ≥ 0.3** vs background; **trajectory visibility rate ≥ 95% (Gold), ≥ 90% (Silver)** of expected frames.
+- **Occlusion heatmap:** accumulate per-zone frames where the ball/player is occluded; **max single-zone occlusion < 10%** of the play volume; persisted with the run for the reliability layer (Part 10).
+
+## AE. Extrinsics, capture-volume validation & multi-camera overlap
+- **Capture volume:** define the play volume (≈ **4.0 × 3.0 × 2.5 m** = table + margins + vertical for toss/loop); **every voxel seen by ≥ 2 cameras** for 3D (Part 02).
+- **Overlap:** adjacent-camera FOV overlap **≥ 50% (Gold), ≥ 30% (min)**; **100% of the play volume double-covered**.
+- **Verification object:** sweep a **known-length bar** (plus the table 2.74 × 1.525 m, net 15.25 cm) through the volume; **3D reconstruction error of the known length ≤ 5 mm (Platinum), ≤ 10 mm (Gold)**; epipolar/triangulation residual **≤ 1.0 px** (Part 19).
+
+## AF. Camera & rig health monitoring
+- **Persistent camera ID:** every unit has a stable **UUID + physical label**, bound to its calibration record (Part 35.AH / 34.AK).
+- **Live telemetry per camera (sampled every few seconds):** fps stability **± 0.5 fps**, **dropped-frame rate < 0.1%**, exposure/gain stability, **sensor temperature**, sync offset, link status (Part 34.AS).
+- **Thermal:** warn at **sensor ≥ 60 °C**, throttle/break before the spec limit; ambient operating **10–35 °C**; long high-fps records scheduled with cooling breaks (Part 35.L/Q).
+
+## AG. Network, latency/jitter & edge-to-cloud pipeline
+- **Live monitoring:** **glass-to-decision latency < 100 ms (officiating), < 200 ms (live coaching) · jitter < 10 ms · packet loss < 0.1%**; keep **≥ 20% bandwidth headroom** (Part 14 / 12).
+- **Pipeline:** edge capture → local buffer / store-and-forward → cloud ingest → analysis (Part 12); capture **never blocks on the network** (Part 32.P / 35.L).
+- **Officiating isolation:** decisive systems run on an **isolated VLAN / air-gapped segment**, **no internet egress**, allow-listed peers only (Part 31 / 34.AE). Fail → officiating disabled.
+
+## AH. Calibration lifecycle: versioned records, recalibration triggers & drift
+- **Versioned calibration record** per camera/session: camera ID · `K` + distortion · extrinsics · timestamp · operator · residuals · validity window — **immutable, stored with provenance** (Part 12 / 34.AK).
+- **Auto-recalibration triggers:** detected bump (feature drift), **temp change > 10 °C**, **reprojection residual > 1.0 px**, or validity window elapsed (Part 02).
+- **Long-session drift monitor:** re-check residual every **≤ 15 min**; **periodic ground-truth validation** — reconstruct net height (15.25 cm) / table dims and require **measured-vs-truth ≤ 5 mm**. Breach → flag + recalibrate; downstream outputs **abstain** until green (Part 10).
+
+## AI. Operator dashboard & AI-guided capture assistance
+- **Operator dashboard:** per-camera RAG health (sync · fps · drops · temp · residual · lighting · ball-visibility), capture-volume coverage, current **certification level** + any failing KPI (Part 32 / 34.BA).
+- **AI-guided setup:** a real-time assistant flags misframing, drift, glare, occlusion, and under-exposure and gives the **corrective action** (raise shutter, re-aim, add light) before/while recording (Part 10 / 32); the in-app input-quality gate (Part 35.I) is its entry point.
+
+## AJ. Capture-quality certification & acceptance KPIs
+- **Composite Capture-Quality Score (CQS):** a weighted roll-up of sync, reprojection, lighting, motion-blur, ball-visibility, overlap, network, and drift — each normalised 0–1; the **lowest sub-score caps the tier** (no averaging a failure away, Part 10 / 34.AL).
+- **Certification levels (the audit-ready gate):**
+
+| Level | Tier | Gate (all must pass) | Unlocks |
+|-------|------|----------------------|---------|
+| **Bronze** | T1 | input-quality green · lighting ≥ Bronze · ball-visibility ≥ 90% | 2D events/stats, labelled low-confidence |
+| **Silver** | T2 | + reprojection ≤ 1.0 px · calibration valid · sync ≤ 1 frame | metric placement, better speed/spin |
+| **Gold** | T3 | + sync ≤ 1 ms · overlap ≥ 50% · recon ≤ 10 mm · flicker < 5% · ΔE < 3 | true 3D, RPM, real spin |
+| **Platinum** | T3 + officiating | + global shutter · sync ≤ 0.5 ms · recon ≤ 5 mm · redundant cams · tamper-evident · isolated network · ground-truth validated | **decisive officiating** (Part 35.T) |
+
+- **Quantitative acceptance KPIs (pass/fail summary):**
+
+| KPI | Target | Fail action |
+|-----|--------|-------------|
+| Inter-camera sync offset | ≤ 0.5 / 1 ms (Plat/Gold) | abstain 3D + officiating |
+| RMS reprojection error | ≤ 0.5 px | recalibrate |
+| 3D reference-length error | ≤ 5 / 10 mm | recalibrate / drop tier |
+| Multi-camera overlap | ≥ 50% | re-aim / add camera |
+| Illuminance / uniformity | ≥ 1000 lux / ≥ 0.8 | fix lighting |
+| Percent flicker | < 5% | fix lighting / shutter |
+| Colour ΔE2000 | < 3 | re-WB / re-profile |
+| Motion-blur | ≤ 0.5 × ball-Ø | raise shutter / fps |
+| Ball-visibility rate | ≥ 95% | re-aim / add view |
+| Dropped frames | < 0.1% | faster media / cooling |
+| Live latency / jitter | < 100 ms / < 10 ms | fix network |
+| Sensor temperature | < 60 °C | cooling break |
+| Drift re-check | ≤ 15 min · ≤ 5 mm | recalibrate |
+
+- A capture is **production-accepted only at the certification level whose KPIs all pass**; the level + the KPI snapshot are stored with the session (provenance, Part 34.AK) and surfaced in the reliability envelope (Part 10).
+
+---
+
 ➡️ **NEXT FILE: `36_RISK_REGISTER_AND_ASSUMPTIONS.md`**
