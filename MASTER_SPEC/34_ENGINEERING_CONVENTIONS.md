@@ -187,6 +187,36 @@
 - **Every physics/stat formula cites its spec section + source** (Part 19 trajectory/Magnus · Part 20 biomechanics · Part 21 tactics) in the docstring, with **units stated**.
 - **No undocumented coefficient** (drag, Magnus, restitution, anthropometric ratios) — named, sourced, in one constants module; each model is **validated against a known/analytic case** in tests (Part 34.AD).
 
+## AO. Rate limiting, quotas & abuse
+- **Per-org / per-key token-bucket** limits; **expensive endpoints** (`analyze`, `game-plan`) cost more budget; over limit → **`429 + Retry-After`**.
+- **Protect auth:** progressive backoff / lockout on failed logins (Part 31 AC); **fair-use across tenants** — one org can't starve others (no noisy-neighbor on the worker queue).
+
+## AP. Contract & schema-drift (CI-enforced)
+- **ORM == migrations:** CI runs `alembic upgrade head` then an autogenerate **diff that must be empty** — `models.py` can never silently drift from the migrations.
+- **OpenAPI == routes:** `api/openapi.yaml` is checked against the live FastAPI schema; **glossary completeness** is asserted (no missing EN/AR `canonical_id`). Drift **fails the build** (Part 27/28).
+
+## AQ. Concurrency, transactions & lost updates
+- **Session-per-request, short transactions;** retry on deadlock/serialization with backoff.
+- **Optimistic locking** (a `version` column / `If-Match`+ETag) so two coaches editing the same profile don't clobber each other — last-write-wins is **rejected**, not silent.
+- **Single-flight per video:** an advisory lock / dedup key means a video is **analyzed once**, never twice concurrently (Part 34.X idempotency).
+
+## AR. Outbound webhooks & integrations
+- **Signed** (HMAC + timestamp), **replay-protected**, retried with backoff + **dead-letter**; **at-least-once → receivers must be idempotent**.
+- **No PII in payloads** — send IDs + a **short-lived signed fetch URL**, not the data; destinations are **allow-listed** (no SSRF, Part 31).
+
+## AS. Graceful lifecycle & resource governance
+- **Graceful shutdown:** drain in-flight requests and **checkpoint/requeue jobs on `SIGTERM`** (k8s-safe) — never lose or half-finish an analysis.
+- **Probes split:** *liveness* (am I up) vs *readiness* (deps OK — DB/queue/storage) vs *startup*; only readiness gates traffic.
+- **Compute/cost governance:** **batch GPU inference**, autoscale workers off **queue depth**, cost caps + **backpressure** instead of unbounded spend (Part 26).
+
+## AT. Licensing, SBOM & model provenance
+- **License compliance:** track third-party licenses; **no copyleft contamination** in distributed code; generate an **SBOM** per release (Part 31 supply chain).
+- **Pretrained weights carry license + source + checksum** and are pinned — **no weights of unknown provenance** ship (defends the poisoned-weights threat, Part 26/31).
+
+## AU. Config governance & feature flags
+- **Every env var documented + validated at boot** (fail-fast, like the JWT-secret guard) with safe defaults; config is typed (`pydantic-settings`), never read ad-hoc.
+- **Feature flags** for risky/gradual rollout and **kill-switches** (deep models, LLM, officiating); flags are typed, **default-off**, and **removed after rollout** — no permanent flags rotting in the code (Part 34.Y).
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
