@@ -46,9 +46,51 @@
 - **Do** lead with the **opponent-specific coaching loop + reliability + para + Arabic** — the unoccupied space.
 - **Reuse** OpenTTGames/TTNet/SpinDOE (Part 26) for the CV layer; spend our effort on the intelligence + reliability + product loop.
 
+## F. Adjacent & analog competitors (could enter TT / set the playbook)
+| Player | Domain | Why it matters |
+|--------|--------|----------------|
+| **SwingVision / PlaySight / Hawk-Eye** | Tennis AI (phone & pro) | proven phone-camera analysis + line-calling UX; could extend to TT |
+| **Stats Perform / Second Spectrum / Sportlogiq** | Pro sports AI analytics | deep tracking/tactics tech + broadcast deals; potential entrant/acquirer |
+| **Catapult / Kinexon** | Athlete load/wearables | physical-side data; partner or compete on sports science |
+| **Google DeepMind — robot TT** | Big-tech research | signals serious interest; perception + RL talent |
+| **Open-source (TTNet/OpenTTGames/SpinDOE)** | Free CV | **lowers the barrier** — anyone can build basic ball/event detection |
+
+## G. Business models, pricing & segments
+- **Models in market:** app subscription (Stupa), enterprise/federation contracts (OSAI), freemium/free (TT Match Analyzer), hardware bundle (robots), per-event broadcast.
+- **Segments & willingness-to-pay:** federations/Olympic (high, contract) · pro clubs (medium) · academies (medium, price-sensitive) · coaches (low-medium, subscription) · players (low, freemium).
+- **Our model:** tiered SaaS (academy→club→federation) + a free/low tier for individuals; price the **game-plan loop** as the premium value.
+
+## H. Five Forces
+- **Rivalry:** moderate-high (Stupa/OSAI established) — differentiate, don't clone.
+- **New entrants:** **high** — open-source CV + big-tech interest lower the barrier; our moat must be the loop + data + partnerships, not the CV.
+- **Substitutes:** manual coaching, Dartfish tagging, "just watch the video" — beat with speed + the prescribe→verify loop.
+- **Buyer power:** federations are few & powerful → land-and-expand; academies are many & price-sensitive.
+- **Supplier power:** datasets/cloud/GPU — mitigated by reuse (Part 26) + multi-cloud.
+
+## I. SWOT (TT-OS)
+- **Strengths:** the analyze→prescribe→verify loop · reliability honesty · para + Arabic · open architecture.
+- **Weaknesses:** 2-person team · no ITTF partnership yet · CV accuracy not yet proven on real footage.
+- **Opportunities:** underserved MENA/para · coaching-loop white space · reuse open CV to move fast.
+- **Threats:** Stupa/OSAI expansion · big-tech entry · data/partnership moats hardening.
+
+## J. Make / buy / partner
+- **Buy/reuse** the CV layer (Part 26: TTNet/TrackNet/SpinDOE) — don't out-CV the incumbents early.
+- **Partner** where possible: dataset/CV (OSAI), equipment (Butterfly), robots (Power Pong), and pursue **ITTF/federation endorsement** (the key credibility moat Stupa holds).
+- **Build** our differentiators: the game-plan/training loop, reliability layer, knowledge graph, para + Arabic.
+- **Data flywheel** (Part 12) is our long-term moat — every analysis improves the models.
+
+## K. Table-stakes vs differentiation
+- **Must match (credibility):** accurate ball/event tracking, clean stats, doubles + para support, fast turnaround. Below par here = no trust.
+- **Sustainable differentiation:** the **coaching loop + reliability + knowledge graph + region** — harder to copy than a feature; deepens with data.
+
+## L. Go-to-market & exit landscape
+- **GTM:** land MENA/para academies + a federation pilot → expand; coach-network + app-store + direct federation sales.
+- **Potential acquirers/exits:** ITTF-aligned partners, Stats Perform-type analytics firms, equipment brands (Butterfly), or a broadcast/Hawk-Eye player.
+
 ## Sources
 - [Stupa Analytics (App Store)](https://apps.apple.com/us/app/stupa-analytics/id1480094754) · [OSAI — championship CV analytics](https://medium.com/@osai.ai/osai-empowered-russian-table-tennis-championship-with-cv-and-ai-analytics-e7d52a6d8a5c) · [TTNet paper](https://arxiv.org/pdf/2004.09927)
 - [TT Match Analyzer](https://ttmatchanalyzer.com/) · [Dartfish](https://www.dartfish.com/) · [SmartScorer (ITTF-compliant umpire app)](https://crocodilesandwichapps.com/index.php/en/smartscorer-for-table-tennis) · [avaTTAR (AR stroke training)](https://arxiv.org/pdf/2407.15373)
+- [SwingVision (tennis AI)](https://swing.tennis/) · [Stats Perform](https://www.statsperform.com/) · [DeepMind competitive robot TT](https://sites.google.com/view/competitive-robot-table-tennis/home)
 
 ---
 
