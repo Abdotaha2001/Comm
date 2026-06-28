@@ -25,12 +25,22 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# Shared entity fields (Part 37 §I). First-class entity tables MUST carry:
+#   id, created_at, updated_at, version, provenance_hash, schema_version (+ deleted_at).
+# Append-only child tables (rallies, shots, events) are exempt (Part 37 §I/§F).
+
+
 class Organization(Base):
     __tablename__ = "organizations"
     id = Column(String(36), primary_key=True, default=_uuid)
     name = Column(String, nullable=False)
     type = Column(String, nullable=False, default="individual")
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class User(Base):
@@ -43,6 +53,11 @@ class User(Base):
     password_hash = Column(String)
     status = Column(String, nullable=False, default="active")
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class Player(Base):
@@ -62,10 +77,14 @@ class Player(Base):
     mobility_mode = Column(String, nullable=False, default="na")
     disability_notes = Column(Text)
     maturation_status = Column(String)
-    # lifecycle
+    # lifecycle + shared fields (Part 37 §I)
     status = Column(String, nullable=False, default="active")
     created_at = Column(DateTime, default=_now)
     updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class Video(Base):
@@ -82,6 +101,11 @@ class Video(Base):
     height = Column(Integer)
     duration_sec = Column(Float)
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class AnalysisRun(Base):
@@ -99,6 +123,11 @@ class AnalysisRun(Base):
     started_at = Column(DateTime)
     finished_at = Column(DateTime)
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class Match(Base):
@@ -112,8 +141,14 @@ class Match(Base):
     format = Column(String)
     is_doubles = Column(SmallInteger, nullable=False, default=0)
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
+# --- Append-only analysis children (Part 37 §I/§F: exempt from full shared fields) ---
 class Rally(Base):
     __tablename__ = "rallies"
     id = Column(String(36), primary_key=True, default=_uuid)
@@ -167,7 +202,7 @@ class PlayerProfile(Base):
     __tablename__ = "player_profiles"
     id = Column(String(36), primary_key=True, default=_uuid)
     player_id = Column(String(36), ForeignKey("players.id"), nullable=False)
-    version = Column(Integer, nullable=False)
+    version = Column(Integer, nullable=False)  # snapshot version (Part 34.BE)
     style_class = Column(String)
     aggregated_stats = Column(JSON)
     strengths = Column(JSON)
@@ -175,6 +210,10 @@ class PlayerProfile(Base):
     source_video_ids = Column(JSON)
     confidence = Column(Float)
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class OpponentDossier(Base):
@@ -189,6 +228,11 @@ class OpponentDossier(Base):
     summary = Column(JSON)
     confidence = Column(Float)
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class Matchup(Base):
@@ -201,6 +245,11 @@ class Matchup(Base):
     predicted_winprob = Column(Float)
     confidence = Column(Float)
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)
 
 
 class GamePlan(Base):
@@ -213,3 +262,8 @@ class GamePlan(Base):
     status = Column(String, nullable=False, default="draft")
     confidence = Column(Float)
     created_at = Column(DateTime, default=_now)
+    updated_at = Column(DateTime, default=_now, onupdate=_now)
+    deleted_at = Column(DateTime)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    provenance_hash = Column(String)
+    schema_version = Column(String)

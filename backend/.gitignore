@@ -6,3 +6,5 @@ dev.db
 *.sqlite3
 media/
 *.avi
+ci.db
+build_manifest.json

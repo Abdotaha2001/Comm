@@ -52,6 +52,32 @@ paths:
               schema: { $ref: '#/components/schemas/TokenResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new organization + first user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                role: { type: string, enum: [admin, coach, player, official, viewer] }
+                org_name: { type: string }
+                full_name: { type: string }
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '409': { description: email already registered }
+
   /auth/me:
     get:
       tags: [auth]
@@ -129,28 +155,20 @@ paths:
         '204': { description: archived }
         '403': { $ref: '#/components/responses/Forbidden' }
 
-  /players/{id}/consents:
-    parameters:
-      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-    post:
-      tags: [players]
-      summary: Record a consent (guardian consent for minors / para / GDPR)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ConsentCreate' }
-      responses:
-        '201':
-          description: created
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Consent' }
-        '422': { $ref: '#/components/responses/ValidationError' }
-
   /players/{id}/videos:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [videos]
+      summary: List a player's videos
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Video' }
     post:
       tags: [videos]
       summary: Register a video for a player (returns an upload target for source=upload)
@@ -223,11 +241,19 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PlayerProfile' }
+
+  /players/{id}/profile/rebuild:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
     post:
       tags: [profiles]
       summary: Rebuild the aggregated profile from the player's videos
       responses:
-        '202': { description: rebuild queued }
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlayerProfile' }
 
   /opponents:
     post:
@@ -241,6 +267,19 @@ paths:
       responses:
         '201':
           description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OpponentDossier' }
+
+  /opponents/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [matchups]
+      summary: Get an opponent dossier
+      responses:
+        '200':
+          description: ok
           content:
             application/json:
               schema: { $ref: '#/components/schemas/OpponentDossier' }
@@ -262,6 +301,19 @@ paths:
       responses:
         '201':
           description: created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Matchup' }
+
+  /matchups/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [matchups]
+      summary: Get a matchup (with its latest game plan)
+      responses:
+        '200':
+          description: ok
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Matchup' }
@@ -294,122 +346,6 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GamePlan' }
-
-  /game-plans/{id}/outcome:
-    parameters:
-      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-    post:
-      tags: [matchups]
-      summary: Record whether the plan worked (efficacy loop)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                match_id: { type: string, format: uuid }
-                actual_result: { type: string }
-                adherence: { type: number, minimum: 0, maximum: 1 }
-                effectiveness: { type: number, minimum: 0, maximum: 1 }
-                notes: { type: string }
-      responses:
-        '201': { description: recorded }
-
-  /players/{id}/training-plans:
-    parameters:
-      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-    get:
-      tags: [coaching]
-      summary: List a player's training plans
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/TrainingPlan' }
-    post:
-      tags: [coaching]
-      summary: Create a periodized training plan
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/TrainingPlanCreate' }
-      responses:
-        '201':
-          description: created
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/TrainingPlan' }
-
-  /drills:
-    get:
-      tags: [coaching]
-      summary: List the drill catalog
-      parameters:
-        - { name: targets_skill, in: query, schema: { type: string } }
-        - { name: level, in: query, schema: { type: string } }
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/Drill' }
-    post:
-      tags: [coaching]
-      summary: Add a drill to the catalog
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/DrillCreate' }
-      responses:
-        '201':
-          description: created
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Drill' }
-
-  /webhooks:
-    get:
-      tags: [system]
-      summary: List webhook subscriptions
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/Webhook' }
-    post:
-      tags: [system]
-      summary: Subscribe to events
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/WebhookCreate' }
-      responses:
-        '201':
-          description: created
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Webhook' }
-
-  /webhooks/{id}:
-    parameters:
-      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-    delete:
-      tags: [system]
-      summary: Delete a webhook subscription
-      responses:
-        '204': { description: deleted }
 
 components:
   securitySchemes:

@@ -45,3 +45,29 @@ jobs:
           DATABASE_URL: sqlite:///./ci.db
       - name: Run tests
         run: pytest -q
+
+  governance:
+    # Part 37 §X/§Z — documentation/implementation may not silently diverge.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Spec enforcement (migrations round-trip · ORM/DB drift · OpenAPI drift · entity catalog · shared fields · traceability · manifest)
+        run: python -m tools.governance --manifest build_manifest.json
+      - name: Governance tests (positive + negative)
+        run: pytest tests/governance -q
+      - name: Upload build manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-manifest
+          path: backend/build_manifest.json
