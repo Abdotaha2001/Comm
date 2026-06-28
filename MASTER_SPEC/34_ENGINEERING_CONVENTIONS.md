@@ -242,6 +242,33 @@
 - Each service ships a **runbook** (symptoms → checks → fixes) and an **owner** (CODEOWNERS, Part 34.P); alerts are **actionable + tied to SLOs** — no alert spam.
 - Incidents get a **blameless postmortem** with tracked action items (Part 31 incident response); recurring toil becomes a backlog item, not a habit.
 
+## BB. LLM & agent engineering
+- **Grounded only:** an LLM feature may state **only numbers the engines produced** (with the envelope) — **no hallucinated stats**; every claim is **cited** to evidence (Part 10/21).
+- **A prompt is a model:** prompts are **versioned + eval'd** with a model card (Part 29); **structured JSON output validated against a schema**; **temperature pinned** for reproducibility.
+- **Prompt-injection defense:** untrusted video text / opponent notes are **data, never instructions** (Part 31); **token/cost budgets** + **graceful fallback to rule-based** when the LLM is down or over budget.
+
+## BC. Real-time & streaming
+- Live officiating / courtside / streamed partial results (Part 13.6/14) use **authenticated WebSockets** with the **same RBAC + org-scope** as REST.
+- **Heartbeat + reconnect + resume**; **backpressure** (coalesce/drop, never OOM); events are **ordered + idempotent** (sequence numbers).
+- The live path still carries **confidence** and can **abstain** — no fake real-time call (Part 10).
+
+## BD. Court coordinate frame & calibration
+- **One canonical court coordinate system** (defined origin, axes, **metres**) shared by all CV/physics; pixels → court via a **calibrated homography**.
+- Every spatial value states its **frame + units**; **calibration quality feeds the reliability envelope** (poor calibration → lower tier).
+- Multi-cam (T3) is **time-synced + extrinsically calibrated** before fusion; un-calibrated geometry **abstains** rather than guesses (Part 19/35).
+
+## BE. Derived data & materialization
+- Profiles, dossiers, matchups are **derived artifacts** — recomputed by **versioned, deterministic, idempotent** jobs, **never hand-edited**.
+- **Invalidate on input change** (new video → profile stale → rebuild); each artifact is stamped with the **inputs + model versions** it was built from (Part 34.AK). **Staleness is visible**, not silent.
+
+## BF. Fairness & bias engineering (in code)
+- Models/thresholds are **tested across subgroups** — para classes, junior vs senior, sex, **left- vs right-handed**, skin tone for detection — so no group is silently underserved (Part 29 fairness).
+- **No able-bodied assumption** baked into para analysis (Part 24); a **subgroup regression fails the gate** exactly like an accuracy regression.
+
+## BG. Stable error catalog
+- A **registry of error codes** (stable string codes, not raw prose) returned as `{code, message}`; codes are **documented + localized** (glossary) and **never renumbered** — clients depend on them.
+- Each code **maps deterministically to an HTTP status** (Part 34.AM/V); adding a code is a reviewed, versioned change.
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
