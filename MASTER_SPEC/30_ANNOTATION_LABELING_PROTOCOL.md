@@ -67,6 +67,43 @@ Models flag **low-confidence / high-disagreement** frames → these are pushed t
 - Every guideline change bumps the protocol version and is logged.
 - Datasets record which protocol version produced them (reproducibility — Part 13).
 
+## I. Per-task labeling rules (the precise "how")
+- **Ball:** click the ball's **visual centre**; box = tight bbox. >50% hidden → `occluded` (mark best-guess centre only if confident). Motion-blur streak → centre of the streak + `motion_blur`.
+- **Bounce:** the **first frame** the ball contacts the table; record the **side**.
+- **Hit:** the frame of **racket–ball contact**; attribute to **player + wing**.
+- **Serve:** contact frame (+ toss-start frame if visible).
+- **Stroke segment:** start = **backswing initiation**, end = **follow-through completion**; the `stroke_type` is judged **at contact**.
+- **Net / let / edge:** the frame of contact with the net/edge.
+- All times are the **source-frame index** (so labels survive re-encoding).
+
+## J. Disambiguation & edge-case catalog (seed)
+- **drive vs loop:** loop = grazing/brushing contact (heavy topspin, arcing); drive = flatter/direct. Unsure → `uncertain`.
+- **push vs chop:** chop = bigger motion from well back; push = short, over the table.
+- **flick vs banana:** banana = BH sidespin flick over the table; flick = general wrist attack.
+- **Edge cases:** net-post clip → `occluded`; **two balls** (warm-up) → label only the in-play ball; **replay / slow-mo** segment → tag `non_live`, do not label as play; player occludes ball → `occluded`; **doubles** → attribute the hit to the correct partner.
+
+## K. Model-assisted pre-annotation
+The current model **pre-labels**; humans **verify/correct** (far faster). Corrections feed back as high-value training data (Part 11). **Never** ship raw model output as ground truth — eval sets are always human-verified.
+
+## L. Annotator onboarding & certification
+- Curriculum + reference clips → **qualification test** (must match the gold set within IAA) → live work.
+- **Ongoing calibration:** periodic gold checks; an **annotator-quality dashboard** tracks each labeler's accuracy/drift; below threshold → retrain or remove.
+
+## M. Gold standard & multi-annotator aggregation
+- **Gold set** built by **expert consensus** (multiple experts + adjudication), frozen — used to qualify annotators and compute accuracy.
+- Noisy multi-annotator categorical labels merged with **Dawid–Skene / MACE** (models annotator reliability), not naive majority.
+
+## N. Privacy & ethics of annotation (ties Part 31)
+- Annotators work in a **secure environment** (no download/screenshots) under **NDA**; access to minors'/athletes' video is **consent-scoped**.
+- **Fair pay** + tiered rates; no speed pressure that sacrifices quality. Label **provenance** (who/when/version) stored and **DVC-versioned** (Part 12).
+
+## O. Special data
+- **Para:** wheelchair → no able-bodied footwork labels; record class context; reach-zone differs (Part 24).
+- **Doubles:** attribute each hit to the correct of the 4 players (Part 09).
+- **Audio:** ball-contact sound onset (if audio captured, Part 14).
+- **3D (multi-cam):** label in one view + triangulate, or label 3D directly; enforce cross-view consistency.
+- **Synthetic:** simulator clips ship with **exact auto-labels** (no human) — for pretraining + to validate the human pipeline (Part 12).
+
 ---
 
 ➡️ **NEXT FILE: `31_SECURITY_PRIVACY_THREAT_MODEL.md`**
