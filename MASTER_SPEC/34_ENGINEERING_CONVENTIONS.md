@@ -293,6 +293,24 @@
 - Match/video data moves **hot → warm → cold** with documented **retention + archival** (Part 31); archived data stays **restorable + tenant-scoped**.
 - **Legal-hold and RTBF override tiering**; storage growth is **governed, not unbounded** (Part 34.AS).
 
+## BN. Scalability & performance at scale
+- **Scale horizontally first:** the API is **stateless** (state in DB / queue / object store) so it scales by adding replicas; **per-endpoint latency budgets** are SLOs with **p95/p99 tracked** (Part 34.AE).
+- **Read path:** route read-heavy dashboards to **read replicas** with **replica-lag awareness** (reads that need write-fresh data go to primary); large orgs **partition/shard by tenant**.
+- **Analysis path:** a **distributed queue** with **priority + fair-share** across tenants (no noisy neighbor, Part 34.AO); large video moves to **cold storage** off the hot path (Part 34.BM).
+- **Profile before optimizing** — no premature optimization; every scale claim is backed by a **load test** (Part 34.AZ).
+
+## BO. Accessibility & inclusion (deep)
+- **WCAG 2.1 AA is testable + gated** (e.g. axe in CI), not aspirational; full **keyboard-only** and **screen-reader** paths for every core journey (Part 32.L).
+- **Inclusion both ways:** the product is usable **by** disabled coaches/players, not only **about** para athletes — para users are first-class (Part 32.O / Part 24).
+- **Localization depth:** ICU **pluralization/gender**, locale-correct number/date/**name-order**, **RTL fully mirrored** (including charts + video controls); **captions/transcripts** on video.
+- **Colour is never the only signal:** confidence is shown as **text + shape + colour** (Part 32.J); **reduced-motion** preference respected.
+
+## BP. Developer experience & maintainability
+- **One-command setup** (`make dev` / devcontainer) with a **seeded demo org**, so a new contributor sees the full upload→game-plan loop in minutes (Part 34.Y).
+- **Generated API clients** from `api/openapi.yaml` — never hand-written (Part 34.AP); **small PRs** with a bounded diff and fast CI.
+- **Technical debt is tracked, not ignored:** `TODO(owner: ticket)`, a debt register, paid down on a cadence; **dead/commented-out code is removed**, not parked.
+- **Complexity budgets** enforced by lint (function length / cyclomatic complexity); **docs live next to the code**; a **per-PR preview environment** for review.
+
 ---
 
 ➡️ **NEXT FILE: `35_HARDWARE_AND_CAPTURE_SOP.md`**
