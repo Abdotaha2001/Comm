@@ -95,6 +95,42 @@ GDPR (EU athletes) · child-safeguarding policy (academies) · anti-doping data 
 - Align to **OWASP ASVS / Top-10**; target **SOC 2 / ISO 27001**; **penetration testing** + a **bug-bounty** before federation rollout.
 - **Edge/courtside boxes** (Part 02): secure boot, disk encryption, physical-tamper resistance; **vendor/third-party risk** review (broadcast feeds, cloud, robots).
 
+## S. SSRF & untrusted-media handling (concrete to our API)
+- **`source=url` ingest and webhook URLs are SSRF vectors** — deny internal/link-local/metadata IPs, allow-list schemes, resolve+validate before fetch, no redirects to private ranges.
+- **Process video in a sandbox:** network-isolated, resource-limited, ephemeral worker (ffmpeg/OpenCV have CVEs); validate/transcode; cap size/duration; never run as root.
+
+## T. Cryptography & key management
+- **TLS 1.3**; **AES-256** at rest; passwords via a strong KDF (Argon2id / scrypt — the scaffold uses PBKDF2, upgrade for prod).
+- **KMS + envelope encryption**, scheduled key rotation; **HSM-backed signing key** for officiating decisions.
+
+## U. Authorization depth & insider threat
+- Beyond RBAC: **ABAC + field-level** access — e.g. **medical/injury data hidden from coaches**; medical sees only their athletes; **purpose-based** access.
+- **Separation of duties**, **just-in-time** privileged access, periodic **access reviews**, privileged-user activity monitoring.
+
+## V. Account & API-abuse protection
+- Password policy + **breached-password check**; **brute-force lockout** + anomaly-based auth.
+- **Per-tenant API quotas** + bot/scraping protection; **webhooks**: HMAC-signed payloads + timestamp/**replay protection**.
+
+## W. Officiating integrity (cryptographic)
+- **Sign each officiating decision** (HSM key) with a **trusted timestamp** → non-repudiation + tamper-evidence.
+- **Chain-of-custody** for evidence packages; **NTP/clock integrity** (a manipulated clock breaks timing-based calls).
+
+## X. Opponent / third-party data privacy (product-specific)
+- Scouting **processes a non-consenting opponent's biometric data** — define the **lawful basis** (legitimate interest / public-competition footage), **data minimisation**, retention limits, and regional rules; honor opponent objection/erasure where required.
+
+## Y. Resilience, BCDR & abuse-DoS
+- **WAF + DDoS protection**; circuit breakers + graceful degradation under load.
+- **RTO/RPO targets**; **immutable, encrypted backups** (ransomware) with tested restores.
+- **Compute quotas** per tenant — expensive analysis jobs are a **financial-DoS** vector.
+
+## Z. Privacy depth
+- **Consent withdrawal propagates** to derived data: stop using + **delete embeddings/artifacts** (not just the source).
+- **Biometric cannot be truly anonymised** (gait/style re-identify) — treat "anonymised" biometrics as still personal.
+- **Differential privacy** for published aggregates; on-device/edge option for sensitive venues.
+
+## AB. Disclosure & assurance
+- Public **vulnerability-disclosure policy** (`security.txt`) + responsible-disclosure process; continuous compliance monitoring; staff/coach **security-awareness training**.
+
 ---
 
 ➡️ **NEXT FILE: `32_PRODUCT_UX_AND_USER_JOURNEYS.md`**
