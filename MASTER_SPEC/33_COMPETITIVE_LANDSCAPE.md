@@ -94,8 +94,13 @@
 - **SOM (near-term):** MENA academies/federations + global para programs + Arabic-speaking coaches — our beachhead.
 - Action: replace these with sourced numbers before any fundraising.
 
-## N. China / Asia — the heartland (research gap)
-TT is **China-centric** (national-team R&D, smart tables, robots, likely domestic CV/analytics tools). This is the largest market **and** a strong-competitor region we under-know. **TODO:** dedicated research on Chinese/Japanese/Korean products and national-team internal tools before entering Asia.
+## N. China / Asia — the heartland (researched)
+TT is **China-centric**, and its edge is **hardware + in-house**, not a SaaS coaching app:
+- **Yeren Smart Training System Pro** (RNT, Germany) — used **for years by the Chinese national team**; patented **3D mm-accurate** ball tracking on/above the table. A high-end T3 benchmark.
+- **Pongbot** — AI robot "coach" at China's national base; adjusts speed/spin, gathers big data, **simulates opponents'** movement.
+- **National-team in-house data:** years of proprietary skills/tactics/video/monitoring — **they don't buy** external analytics.
+- **Trend to watch:** academic **multimodal-LLM TT coaching** systems with a knowledge base (mirrors our Part 11 direction).
+- **Implication:** China is the toughest market (hardware-rich, self-built) → **not our beachhead**; but Yeren/Pongbot set the accuracy bar, and the LLM-coaching trend validates our roadmap. Target buyers **without** internal R&D first.
 
 ## O. Battlecards (sell-against)
 | vs | Their pitch | Our counter | Trap to set |
@@ -155,12 +160,29 @@ Different approaches and buyers we must not ignore:
 | **Federation / national-team in-house tools** (esp. China) | internal R&D — they **don't buy** | target federations without internal teams; sell where build-vs-buy favors buy |
 | **Status quo: "do nothing"** | coach intuition + plain video | ⭐ **the real #1 competitor** — beat it with speed, the prescribe→verify loop, and an honest free tier |
 
-> **Honest note:** beyond this, competitive depth needs **primary research** — competitor trials, customer/coach interviews, real price points — not more spec. This doc is now a strong framework to fill with field data.
+## BB. Competitor dossiers + real pricing (researched)
+| | **Stupa Sports Analytics** | **OSAI** |
+|---|---|---|
+| Founded / HQ | **2019**, Gurugram, India | **2020**, Nicosia, Cyprus |
+| Founders | Deepak Malik (ex-TT player) + Megha Gambhir | Roman Garin |
+| Core business | **Full-stack sports platform** — analytics + event management + OTT streaming + betting feeds | ⭐ **Sports-betting data / microbetting + real-time auto-trading** (CV feeds odds) |
+| TT relevance | performance analytics; **ITTF + USA Table Tennis** partners | TTNet CV (97.5% / 18.5 ms) → **betting markets**, not coaching |
+| Funding | VC-backed (full-stack scale) | **No funding raised** (per Crunchbase) |
+| **Pricing** | **~Rs 600/mo (basic) → Rs 10,000 (~US$200) pro** | enterprise/quote (betting clients) |
+
+**Strategic reads:**
+- **OSAI is betting-first, not coaching** → our **coaching white space is wide open** against them; reuse their CV thinking, don't fear them on coaching.
+- **Stupa is broad** (federations/events/OTT/betting) → our wedge is **depth in the coaching loop + reliability + para + Arabic**, not breadth.
+- **Stupa's price anchor (~$200/mo pro)** sets our pro-tier ceiling; undercut on academies, premium on the federation/officiating tier.
+
+> **Honest note:** these are the public figures I could source; **fundings/seat-counts/exact tiers still need a sales-grade refresh** (trials + interviews). The framework above is ready to fill with field data.
 
 ## Sources
 - [Stupa Analytics (App Store)](https://apps.apple.com/us/app/stupa-analytics/id1480094754) · [OSAI — championship CV analytics](https://medium.com/@osai.ai/osai-empowered-russian-table-tennis-championship-with-cv-and-ai-analytics-e7d52a6d8a5c) · [TTNet paper](https://arxiv.org/pdf/2004.09927)
 - [TT Match Analyzer](https://ttmatchanalyzer.com/) · [Dartfish](https://www.dartfish.com/) · [SmartScorer (ITTF-compliant umpire app)](https://crocodilesandwichapps.com/index.php/en/smartscorer-for-table-tennis) · [avaTTAR (AR stroke training)](https://arxiv.org/pdf/2407.15373)
 - [SwingVision (tennis AI)](https://swing.tennis/) · [Stats Perform](https://www.statsperform.com/) · [DeepMind competitive robot TT](https://sites.google.com/view/competitive-robot-table-tennis/home)
+- **Pricing/dossiers:** [Stupa pricing & founding — BusinessToday](https://www.businesstoday.in/latest/economy-politics/story/how-delhi-based-ai-startup-is-training-table-tennis-players-globally-295375-2021-05-09) · [Stupa — Tracxn](https://tracxn.com/d/companies/stupasportsanalytics) · [OSAI — Crunchbase](https://www.crunchbase.com/organization/osai) · [OSAI betting focus](https://osai.ai/)
+- **China:** [Yeren Smart Training (Chinese national team)](https://rnt.de/en/solutions/sport-data/tischtennis/) · [Pongbot at China national base — China Daily](https://www.chinadaily.com.cn/a/202108/14/WS6116fde0a310efa1bd668ba8.html) · [Multimodal-LLM TT coaching — PLOS One](https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0317839)
 
 ---
 
