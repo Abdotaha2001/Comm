@@ -131,6 +131,28 @@ GDPR (EU athletes) · child-safeguarding policy (academies) · anti-doping data 
 ## AB. Disclosure & assurance
 - Public **vulnerability-disclosure policy** (`security.txt`) + responsible-disclosure process; continuous compliance monitoring; staff/coach **security-awareness training**.
 
+## AC. Account-takeover (ATO) defense
+- **Credential stuffing / password spraying:** block **breached passwords** (HIBP), per-account + per-IP rate limits, **bot/CAPTCHA** on abuse, device fingerprinting.
+- **Phishing-resistant MFA:** prefer **WebAuthn / passkeys / FIDO2** over TOTP; **never SMS-only** (SIM-swap). MFA **mandatory for admin/umpire/medical**.
+- **Risk-based / step-up auth:** new device, impossible travel, unusual IP → require re-auth/MFA.
+- **Hardened account recovery** (the #1 ATO vector): no account enumeration, signed time-limited reset links, recovery codes, re-verify identity, invalidate sessions on reset.
+- **Security-event notifications:** email on new-device login, password/MFA/email change.
+- **Session/device management:** list active sessions + **"log out everywhere"**; revoke on suspicion.
+- **Post-ATO containment:** revoke **all** sessions/tokens, force password reset, audit the blast radius, notify the user.
+
+## AD. Broken access control (IDOR / mass-assignment)
+- **Object-level authorization on every resource** — never trust a client-supplied ID; verify org + ownership (IDOR is OWASP #1). A test per endpoint that another tenant gets `404/403`.
+- **Mass-assignment protection:** updates whitelist editable fields — a `PATCH` can **never** set `org_id`, `role`, `status`, or another tenant's keys (Pydantic create/update models already constrain this; keep it that way).
+- **Deny-by-default**; authorization checked server-side on every call, not in the UI.
+
+## AE. Token / session hardening (specifics)
+- **Pin the JWT algorithm** (reject `alg=none` and algorithm-confusion); strong, rotated `JWT_SECRET` (never the dev default in prod).
+- **Short access-token TTL + refresh-token rotation + a revocation list** (JWTs aren't revocable until expiry otherwise).
+- Cookies (web): **Secure + HttpOnly + SameSite**; consider token binding.
+
+## AF. Account-enumeration (concrete fix for our API)
+- Today `/auth/register` returns **409 "email already registered"** and login/reset reveal existence → **enumeration leak**. Fix: **generic responses** ("if the email is valid, you'll receive…"), constant-time handling, and rate-limit these endpoints. (Honesty: a real gap in the current backend — tracked to fix.)
+
 ---
 
 ➡️ **NEXT FILE: `32_PRODUCT_UX_AND_USER_JOURNEYS.md`**
