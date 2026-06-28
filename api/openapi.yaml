@@ -172,6 +172,12 @@ paths:
     post:
       tags: [analysis]
       summary: Enqueue an analysis run for a video
+      requestBody:
+        required: false
+        description: Optional capture report; when present the capture is certified (Part 35).
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AnalyzeRequest' }
       responses:
         '202':
           description: accepted (queued)
@@ -522,6 +528,19 @@ components:
         fps: { type: number }
         duration_sec: { type: number }
 
+    AnalyzeRequest:
+      type: object
+      description: Optional capture report (Capture Acceptance Framework, Part 35).
+      properties:
+        capture_measurements:
+          type: object
+          additionalProperties: true
+          description: KPI id -> measured value; triggers capture certification.
+        capture_context:
+          type: object
+          additionalProperties: true
+          description: operator_id, camera_ids, calibration_version, capture_tier, etc.
+
     AnalysisRun:
       type: object
       properties:
@@ -531,6 +550,16 @@ components:
         reliability_index: { type: number, minimum: 0, maximum: 1 }
         input_quality: { type: object, additionalProperties: true }
         model_versions: { type: object, additionalProperties: true }
+        capture_certification:
+          type: string
+          nullable: true
+          enum: [fail, bronze, silver, gold, platinum]
+          description: capture certification level (Part 35); null if no capture report supplied.
+        capture_acceptance:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: compact CQS result — scores, failed gates, reliability envelope, provenance hash.
         match_id: { type: string, format: uuid, nullable: true }
 
     Match:

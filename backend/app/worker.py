@@ -16,7 +16,60 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-def analyze_run(run_id: str, db: Session) -> str:
+def _derive_capture_kpis(result: dict) -> dict:
+    """KPIs measurable from the footage itself (operator-supplied values override
+    these in the merge). Resolution is the vertical pixel count."""
+    det = float(result.get("detection_rate") or 0.0)
+    return {
+        "resolution": result.get("height"),
+        "frame_rate": result.get("fps"),
+        "ball_visibility": round(det * 100.0, 1),
+        "tracking_success": round(det * 100.0, 1),
+        "dropped_frames": 0.0,
+        "metadata_completeness": 100.0
+        if (result.get("fps") and result.get("width") and result.get("height"))
+        else 90.0,
+    }
+
+
+def _capture_acceptance(run, result, measurements, context):
+    """Run the Capture Acceptance Framework (Part 35). Returns (certification,
+    compact_acceptance_dict). Degrades gracefully: never fails the analysis."""
+    from .capture_quality import compute_cqs  # lazy: schema load only when used
+
+    merged = {**_derive_capture_kpis(result), **(measurements or {})}
+    ctx = {
+        "session_id": run.id,
+        "software_version": "tt-os-backend",
+        "model_version": result.get("detector"),
+        **(context or {}),
+    }
+    res = compute_cqs(merged, context=ctx)
+    compact = {
+        "schema_version": res.schema_version,
+        "certification": res.certification,
+        "reliability_level": res.reliability_level,
+        "capture_tier": res.capture_tier,
+        "overall_state": res.overall_state,
+        "effective_score": res.effective_score,
+        "overall_score": res.overall_score,
+        "target_certification": res.target_certification,
+        "failed_gates": res.failed_gates,
+        "warnings": res.warnings,
+        "recommended_actions": res.recommended_actions,
+        "reliability_envelope": res.reliability_envelope,
+        "provenance_hash": res.provenance["hash"],
+        "per_level": res.per_level,
+    }
+    return res.certification, compact
+
+
+def analyze_run(
+    run_id: str,
+    db: Session,
+    capture_measurements: dict | None = None,
+    capture_context: dict | None = None,
+) -> str:
     run = db.get(AnalysisRun, run_id)
     if run is None:
         raise ValueError("analysis run not found")
@@ -76,6 +129,18 @@ def analyze_run(run_id: str, db: Session) -> str:
             "detection_rate": result["detection_rate"], "speed_calibrated": False,
         }
         run.model_versions = {"ball_detector": result["detector"]}
+
+        # Capture certification (Part 35) — only when a capture report is supplied.
+        if capture_measurements is not None:
+            try:
+                cert, acceptance = _capture_acceptance(
+                    run, result, capture_measurements, capture_context
+                )
+                run.capture_certification = cert
+                run.capture_acceptance = acceptance
+            except Exception as cap_exc:  # noqa: BLE001 — never fail analysis on this
+                run.capture_acceptance = {"error": str(cap_exc)}
+
         run.status = "done"
         run.finished_at = _now()
         video.status = "done"

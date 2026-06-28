@@ -11,7 +11,7 @@ from ..config import settings
 from ..db import get_db
 from ..deps import get_current_org, require_roles
 from ..models import AnalysisRun, Match, Organization, Player, Video
-from ..schemas import AnalysisRunRead, VideoRead
+from ..schemas import AnalysisRunRead, AnalyzeRequest, VideoRead
 from ..worker import analyze_run
 
 router = APIRouter(tags=["videos"])
@@ -70,6 +70,7 @@ def list_videos(
 @router.post("/videos/{vid}/analyze", response_model=AnalysisRunRead, dependencies=list(WRITE))
 def analyze_video_endpoint(
     vid: str,
+    req: AnalyzeRequest | None = None,
     db: Session = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ):
@@ -83,16 +84,21 @@ def analyze_video_endpoint(
     db.refresh(run)
 
     # Scaffold runs the worker inline (synthetic clips are fast). Production: queue + GPU worker.
+    measurements = req.capture_measurements if req else None
+    context = req.capture_context if req else None
     match_id = None
     try:
-        match_id = analyze_run(run.id, db)
+        match_id = analyze_run(run.id, db, measurements, context)
     except Exception:
         pass  # worker recorded status=failed + error
     db.refresh(run)
     return AnalysisRunRead(
         id=run.id, video_id=run.video_id, status=run.status,
         reliability_index=run.reliability_index, input_quality=run.input_quality,
-        model_versions=run.model_versions, error=run.error, match_id=match_id,
+        model_versions=run.model_versions,
+        capture_certification=run.capture_certification,
+        capture_acceptance=run.capture_acceptance,
+        error=run.error, match_id=match_id,
     )
 
 
@@ -114,6 +120,8 @@ def get_run(
     return AnalysisRunRead(
         id=run.id, video_id=run.video_id, status=run.status,
         reliability_index=run.reliability_index, input_quality=run.input_quality,
-        model_versions=run.model_versions, error=run.error,
-        match_id=match.id if match else None,
+        model_versions=run.model_versions,
+        capture_certification=run.capture_certification,
+        capture_acceptance=run.capture_acceptance,
+        error=run.error, match_id=match.id if match else None,
     )

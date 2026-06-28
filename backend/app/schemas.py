@@ -106,6 +106,14 @@ class VideoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AnalyzeRequest(BaseModel):
+    """Optional capture report supplied at analyze time. When `capture_measurements`
+    is present, the Capture Acceptance Framework (Part 35) certifies the capture;
+    otherwise certification is skipped (footage reliability still computed)."""
+    capture_measurements: Optional[dict] = None
+    capture_context: Optional[dict] = None
+
+
 class AnalysisRunRead(BaseModel):
     id: str
     video_id: str
@@ -113,6 +121,8 @@ class AnalysisRunRead(BaseModel):
     reliability_index: Optional[float] = None
     input_quality: Optional[dict] = None
     model_versions: Optional[dict] = None
+    capture_certification: Optional[str] = None
+    capture_acceptance: Optional[dict] = None
     error: Optional[str] = None
     match_id: Optional[str] = None
 

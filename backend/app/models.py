@@ -92,6 +92,9 @@ class AnalysisRun(Base):
     model_versions = Column(JSON)
     input_quality = Column(JSON)
     reliability_index = Column(Float)
+    # Capture Acceptance Framework (Part 35): set when a capture report is supplied.
+    capture_certification = Column(String)
+    capture_acceptance = Column(JSON)
     error = Column(Text)
     started_at = Column(DateTime)
     finished_at = Column(DateTime)
