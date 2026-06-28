@@ -120,6 +120,33 @@ TT is **China-centric** (national-team R&D, smart tables, robots, likely domesti
 ## S. Competitive-intelligence process
 This is a **living doc** — review quarterly; monitor competitor releases/pricing/partnerships; log moves; update the battlecards. Assign an owner once the team grows.
 
+## T. Pricing strategy (*anchors to validate*)
+- **Value metric:** per active player/seat (scales with the customer); not per-minute (penalizes use).
+- **Tiers:** Free (1 player, watermark) · Coach/Academy (subscription) · Club · **Federation** (contract + SSO + white-label + officiating). Premium gates = the **game-plan loop** + multi-cam/officiating.
+- **Anchoring:** price below a federation's cost of a manual analyst; benchmark vs Stupa's app price. *(Get real competitor price points before launch.)*
+
+## U. Credibility & the ITTF moat
+The incumbent edge is **ITTF endorsement + pro logos**. Counter with: **pilot programs** (a federation/academy), **independent validation studies** (Part 16 — published accuracy + AI-vs-expert agreement), case studies, and pursuing **ITTF/continental-federation recognition** ourselves. Trust is earned with evidence, not claims (our reliability layer is the proof).
+
+## V. Switching costs & migration
+Incumbents create stickiness via accumulated data. **Win switchers** by importing their footage/history, **no lock-in** (open export, our own data portability), and a fast "first game plan in a day" wow-moment.
+
+## W. Open-source & ecosystem strategy
+A wedge vs **closed** incumbents: keep the **glossary/ontology + API/SDK open** (Parts 27/28) and build a community/ecosystem; keep the **trained models + reliability + intelligence** proprietary. Openness lowers adoption friction and recruits contributors.
+
+## X. Scenario planning (and our response)
+- **Stupa acquired by / deepens with ITTF** → lean harder on the loop + para + region; seek continental-federation partners.
+- **Big tech (DeepMind-style) enters** → partner/ride their CV; compete on the coaching loop + domain depth they won't build.
+- **Free Chinese/giant entrant** → differentiate on reliability + para + Arabic + service; don't compete on price for commodity tracking.
+
+## Y. Anti-personas (focus)
+Not (yet) for: casual recreational players wanting a toy app; broadcast-graphics-only buyers; markets we can't support linguistically/operationally. Focus beats breadth for a 2-person team.
+
+## Z. Competitive KPIs
+Track **head-to-head win rate** in deals, displacement of incumbents, feature-parity gap closing, share of voice in target regions — so "differentiation" is measured, not assumed.
+
+> **Honest note:** beyond this, competitive depth needs **primary research** — competitor trials, customer/coach interviews, real price points — not more spec. This doc is now a strong framework to fill with field data.
+
 ## Sources
 - [Stupa Analytics (App Store)](https://apps.apple.com/us/app/stupa-analytics/id1480094754) · [OSAI — championship CV analytics](https://medium.com/@osai.ai/osai-empowered-russian-table-tennis-championship-with-cv-and-ai-analytics-e7d52a6d8a5c) · [TTNet paper](https://arxiv.org/pdf/2004.09927)
 - [TT Match Analyzer](https://ttmatchanalyzer.com/) · [Dartfish](https://www.dartfish.com/) · [SmartScorer (ITTF-compliant umpire app)](https://crocodilesandwichapps.com/index.php/en/smartscorer-for-table-tennis) · [avaTTAR (AR stroke training)](https://arxiv.org/pdf/2407.15373)
