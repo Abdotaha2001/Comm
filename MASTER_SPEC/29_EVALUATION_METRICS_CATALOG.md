@@ -31,7 +31,7 @@ Grouped by Part 18 model IDs. Datasets reference Part 26.
 | Model | Primary metric | Target | Eval set |
 |-------|----------------|--------|----------|
 | M1 ball detector | mAP@0.5 · loc-RMSE | ≥ 0.90 · ≤ 3 px | OpenTTGames / Roboflow |
-| M2 ball tracker | IDF1 · MOTA | ≥ 0.85 · ≥ 0.80 | OpenTTGames |
+| M2 ball tracker | **HOTA** · IDF1 · MOTA | ≥ 0.75 · ≥ 0.85 · ≥ 0.80 | OpenTTGames |
 | M3 player detector | mAP@0.5 | ≥ 0.95 | COCO-person + TT |
 | M4 2D pose | PCK@0.2 | ≥ 0.90 | TT pose set |
 | M5 3D pose | MPJPE | ≤ 30 mm | multi-cam (T3) |
@@ -43,7 +43,7 @@ Grouped by Part 18 model IDs. Datasets reference Part 26.
 | Model | Primary metric | Target | Eval set |
 |-------|----------------|--------|----------|
 | M12 spin type | macro-F1 | ≥ 0.80 | SpinDOE + labelled |
-| M13 spin RPM | MAE | ≤ 5 rps | SpinDOE (high-speed GT) |
+| M13 spin RPM · **axis** | RPM MAE · axis angular err | ≤ 5 rps · ≤ 10° | SpinDOE (high-speed GT) |
 | M14 speed | MAE | ≤ 5 km/h (T2/T3) | calibrated rig |
 | M11 landing predictor | MAE (cm) | ≤ 10 cm | 3D track set |
 
@@ -107,6 +107,46 @@ Grouped by Part 18 model IDs. Datasets reference Part 26.
 | Game plan | generated + evidence-cited | ✅ | rule-based; needs coach-panel usefulness rating |
 
 > These baselines are **synthetic-clean** — they prove the pipeline and gate, not world-class accuracy. Real targets in §C are met by the deep models + real datasets (Part 26).
+
+## H. Evaluation methodology (rigor)
+- **Fixed train/val/test splits** per dataset; **no leakage** — the same match/player/clip never appears across splits.
+- Report every metric with a **95% confidence interval** (bootstrap) **and** the sample size; don't claim an improvement whose CIs overlap.
+- Small sets → k-fold cross-validation; the **golden test set is frozen** and never trained on.
+- **Human ceiling:** report expert inter-rater agreement (Part 30) as the achievable upper bound — a model cannot meaningfully beat its label noise.
+
+## I. Stratified & robustness metrics (report, don't average away)
+- Break **every** metric down by condition: lighting, venue/background, **ball colour**, **occlusion / motion-blur**, capture tier, player level, **handedness/grip**, **rubber type (long-pips/anti)**, camera angle.
+- Report the **worst-stratum** value, not just the mean — a healthy average can hide a fully broken condition.
+- Robustness delta: clean vs degraded input (compression, blur, low light).
+
+## J. Fairness / parity
+- Performance **parity** across skin tone, body type, gender, and **para class** — max absolute gap ≤ **5%**.
+- Equal abstention/error rates across groups; published fairness report (ties Part 12 bias audit).
+
+## K. Uncertainty & calibration depth
+- **Reliability diagram** + ECE/MCE per model; **per-class** calibration for classifiers.
+- Regression: **prediction-interval coverage (PICP)** — a stated "78±6" must contain truth ~the claimed % of the time.
+- Abstention quality: **risk–coverage curve** (accuracy vs % of cases answered).
+
+## L. System-level (end-to-end) metrics — the real product accuracy
+- **Final-score accuracy** (computed score vs scoreboard OCR / official) — cross-check (Part 09/10).
+- Point-attribution accuracy · rally-segmentation F1 · event-timeline alignment to the official clock.
+- **Plan→outcome effectiveness** (efficacy, Part 16) — does following the plan change results.
+
+## M. Efficiency / cost metrics
+- **Latency p50/p95/p99** per stage; throughput (× real-time per GPU); **model size**; energy & **cost per analysis**.
+- Targets **per hardware tier** (phone / Jetson / server) — Part 12.
+
+## N. Production monitoring & drift
+- **Population Stability Index (PSI)** on inputs; **performance-over-time**; alert on drift (Part 10/12).
+- **Champion–challenger / canary** with shadow evaluation before any promotion; online metrics tracked.
+
+## O. Release gate (ship only if ALL hold)
+1. Primary metric ≥ target **on the frozen test set**, within CI.
+2. **No stratum** below its floor (§I); fairness gap within bound (§J).
+3. Calibration ECE ≤ 0.05; latency within the tier budget (§M).
+4. Golden-set regression green; **model card + eval report** attached.
+5. **Officiating only:** human-agreement κ ≥ target **and** the abstain→human path verified.
 
 ---
 
