@@ -1,0 +1,154 @@
+"""Run a BallDetector over a video and derive structured results.
+
+This is a real (classical-CV) derivation from actual detections — not a mock.
+Speed is honestly flagged uncalibrated (tier t1). Stroke/spin classification is
+a baseline placeholder until pose/deep models land (MASTER_SPEC Parts 05, 18, 26).
+"""
+from collections import Counter
+from typing import Optional
+
+import cv2
+
+from .. import uncertainty
+from .detector import BallDetector
+from .opencv_detector import OpenCVBallDetector
+from .scoreboard import read_scoreboard
+from .spin import gravity_from_tracks, rally_spin
+
+MAX_GAP = 8  # frames of no-detection that split rallies
+
+
+def _ms(frame_idx: int, fps: float) -> int:
+    return int(frame_idx / max(fps, 1.0) * 1000)
+
+
+def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
+    det = detector or OpenCVBallDetector()
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        raise RuntimeError(f"could not open video: {path}")
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 0
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 0
+
+    track = []  # (frame_idx, x, y, r, conf)
+    score_reads = []
+    idx = 0
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+        d = det.detect(frame, idx)
+        if d is not None:
+            track.append((idx, d.x, d.y, d.radius, d.confidence))
+        sb = read_scoreboard(frame)
+        if sb is not None:
+            score_reads.append((sb[0], sb[1]))
+        idx += 1
+    cap.release()
+
+    # Scoreboard OCR: the consensus (mode) reading across frames = free ground truth.
+    score = None
+    if score_reads:
+        (p1, p2), cnt = Counter(score_reads).most_common(1)[0]
+        score = {
+            "p1": p1, "p2": p2, "source": "ocr_7seg",
+            "frames_read": cnt, "consensus": round(cnt / len(score_reads), 3),
+        }
+
+    total = idx
+    detection_rate = (len(track) / total) if total else 0.0
+    mean_conf = (sum(t[4] for t in track) / len(track)) if track else 0.0
+    reliability_index = round(detection_rate * mean_conf, 3)
+    px_per_m = (w / 2.74) if w else 0.0  # nominal: assume frame width ~ table length
+
+    # Segment into rallies by detection gaps.
+    rallies, current = [], []
+    for t in track:
+        if current and (t[0] - current[-1][0]) > MAX_GAP:
+            rallies.append(current)
+            current = []
+        current.append(t)
+    if current:
+        rallies.append(current)
+
+    # Gravity reference (median ballistic accel) for markerless spin estimation.
+    gravity_px = gravity_from_tracks([[(t[0], t[1], t[2]) for t in seg] for seg in rallies])
+
+    out_rallies = []
+    for ri, seg in enumerate(rallies):
+        shots, events, shot_idx = [], [], 0
+        wing = "fh"
+        # Data-driven localisation noise for this rally (residual of a smooth fit),
+        # falling back to the measured default when the segment is too short (§B/§AP).
+        seg_sigma_px = uncertainty.localization_sigma_from_track(
+            [(t[0], t[1], t[2]) for t in seg]
+        ) or uncertainty.LOCALIZATION_STD_PX
+        # serve marker at rally start
+        events.append({
+            "type": "serve", "frame": seg[0][0], "ts_ms": _ms(seg[0][0], fps),
+            "position": {"x": seg[0][1], "y": seg[0][2]},
+            "confidence": round(seg[0][4], 3),
+            "provenance": {"source": det.name, "tier": "t1", "signals": ["rally_start"]},
+        })
+        for i in range(1, len(seg) - 1):
+            f0, x0, y0, _, c0 = seg[i - 1]
+            f1, x1, y1, _, c1 = seg[i]
+            f2, x2, y2, _, _ = seg[i + 1]
+            if (f1 - f0) != 1 or (f2 - f1) != 1:
+                continue
+            vx0, vx1 = x1 - x0, x2 - x1
+            vy0, vy1 = y1 - y0, y2 - y1
+            # Bounce: vertical reversal (was going down, now up)
+            if vy0 > 0 and vy1 <= 0:
+                events.append({
+                    "type": "bounce", "frame": f1, "ts_ms": _ms(f1, fps),
+                    "position": {"x": round(x1, 1), "y": round(y1, 1)},
+                    "confidence": round(c1, 3),
+                    "provenance": {"source": det.name, "tier": "t1", "signals": ["vy_reversal"]},
+                })
+            # Shot/hit: horizontal reversal
+            if vx0 != 0 and vx1 != 0 and (vx0 > 0) != (vx1 > 0):
+                disp_px = (vx0 ** 2 + vy0 ** 2) ** 0.5
+                speed_kmh = round((disp_px * fps / px_per_m) * 3.6, 1) if px_per_m else 0.0
+                # Propagated interval (GUM first-order) — replaces the old ±30%.
+                speed_ci, unc = uncertainty.speed_uncertainty(
+                    speed_kmh, disp_px, tier="t1", sigma_px=seg_sigma_px, k=2.0)
+                shots.append({
+                    "idx": shot_idx, "frame": f1, "ts_ms": _ms(f1, fps),
+                    "stroke_type": "drive", "spin_type": None, "wing": wing,
+                    "speed_kmh": speed_kmh, "speed_ci": speed_ci,
+                    "quality": None, "confidence": round(c1, 3),
+                    "provenance": {"source": det.name, "tier": "t1",
+                                   "signals": ["vx_reversal"], "speed_calibrated": False,
+                                   "speed_inputs_conf": [round(c0, 3), round(c1, 3)],
+                                   "speed_uncertainty": unc},
+                })
+                shot_idx += 1
+                wing = "bh" if wing == "fh" else "fh"
+
+        start_f, end_f = seg[0][0], seg[-1][0]
+        duration = round((end_f - start_f) / max(fps, 1.0), 2)
+        quality = round(min(1.0, (len(shots) * 0.2 + duration / 15.0)) * 100, 1)
+        spin = rally_spin([(t[0], t[1], t[2]) for t in seg], gravity_px)
+        if spin["spin_type"] != "no_spin":
+            for s in shots:
+                s["spin_type"] = spin["spin_type"]
+                s["provenance"]["spin_confidence"] = spin["confidence"]
+        out_rallies.append({
+            "idx": ri, "start_frame": start_f, "end_frame": end_f,
+            "start_ms": _ms(start_f, fps), "end_ms": _ms(end_f, fps),
+            "duration_sec": duration, "quality": quality,
+            "confidence": round(mean_conf, 3),
+            "spin": spin,
+            "shots": shots, "events": events,
+        })
+
+    return {
+        "fps": fps, "total_frames": total, "width": w, "height": h,
+        "detector": det.name, "detection_rate": round(detection_rate, 3),
+        "reliability_index": reliability_index,
+        "px_per_m": round(px_per_m, 2), "speed_calibrated": False,
+        "score": score,
+        "rallies": out_rallies,
+    }

@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+dev.db
+*.sqlite3
+media/
+*.avi
+ci.db
+build_manifest.json

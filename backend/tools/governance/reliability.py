@@ -1,0 +1,121 @@
+"""Reliability-law governance gate (Part 40 §T/§AO).
+
+Enforces in CI that the reliability engine upholds the non-negotiables:
+no averaging of uncertainty, status bands honored, tier cap is a minimum,
+certification ceilings come from the Part-35 single source, and the calibration
+release gate actually discriminates good vs miscalibrated models.
+"""
+from __future__ import annotations
+
+from .common import Check
+
+
+def check_reliability() -> Check:
+    chk = Check("reliability")
+    try:
+        from app import calibration as cal
+        from app import reliability as rel
+    except Exception as exc:  # noqa: BLE001
+        chk.fail(f"reliability/calibration modules not importable: {exc}")
+        return chk
+
+    # Required engine API exists.
+    for name in ("build", "status_for", "compose", "apply_cap", "abstain", "decide", "summarize"):
+        if not callable(getattr(rel, name, None)):
+            chk.fail(f"reliability.{name} missing")
+    for name in ("ece", "mce", "brier_score", "picp", "fit_temperature", "passes_gate"):
+        if not callable(getattr(cal, name, None)):
+            chk.fail(f"calibration.{name} missing")
+    if not chk.ok:
+        return chk
+
+    # §B.3/§H — averaging uncertainty is forbidden.
+    try:
+        rel.compose([0.9, 0.9], "avg")
+        chk.fail("compose() must reject averaging mode (Part 40 §B.3)")
+    except ValueError:
+        pass
+    if rel.compose([0.95, 0.9, 0.85], "required_all") != 0.85:
+        chk.fail("required_all composition must be the minimum (§H.4)")
+
+    # §E — status bands.
+    if rel.status_for(0.96, validated=True) != "verified":
+        chk.fail("status_for: validated >=0.95 must be 'verified'")
+    if rel.status_for(0.40) != "abstain":
+        chk.fail("status_for: below threshold must be 'abstain'")
+    if rel.status_for(0.99, calibrated=False) != "preliminary":
+        chk.fail("status_for: uncalibrated must cap at 'preliminary' (§M)")
+
+    # §I — tier cap is a minimum; certification ceilings are the Part-35 SoT.
+    if rel.apply_cap(0.92, tier="T1") != 0.6:
+        chk.fail("apply_cap: T1 ceiling must cap to 0.6 (§I)")
+    if rel.apply_cap(0.99, certification="fail") > 0.3:
+        chk.fail("apply_cap: 'fail' capture must cap to <=0.3 (Part 35 single source)")
+
+    # §G.4 — calibration release gate discriminates (well-calibrated: 0.9 conf,
+    # 90% correct -> ECE ~ 0, comfortably below target).
+    if not cal.passes_gate([0.9] * 100, [True] * 90 + [False] * 10):
+        chk.fail("passes_gate: a well-calibrated set must pass")
+    if cal.passes_gate([0.99] * 100, [True] * 50 + [False] * 50):
+        chk.fail("passes_gate: an overconfident set must fail (§G.4)")
+
+    # §K — per-domain abstain thresholds are config (scoreboard stricter than speed).
+    if not callable(getattr(rel, "threshold_for", None)):
+        chk.fail("reliability.threshold_for missing (§K)")
+    elif rel.threshold_for("scoreboard") <= rel.threshold_for("speed"):
+        chk.fail("scoreboard abstain threshold must be stricter than speed (§K)")
+
+    # §X — conformal intervals meet their target coverage.
+    try:
+        import random
+
+        from app import conformal
+
+        random.seed(1)
+        cal_res = [random.gauss(0, 1) for _ in range(400)]
+        q = conformal.fit_quantile(cal_res, alpha=0.1)
+        test = [random.gauss(0, 1) for _ in range(2000)]
+        if conformal.coverage(test, [-q] * len(test), [q] * len(test)) < 0.85:
+            chk.fail("conformal interval fails target coverage (§X)")
+    except Exception as exc:  # noqa: BLE001
+        chk.fail(f"conformal module error: {exc}")
+
+    # §Y — the OOD gate discriminates novel inputs.
+    try:
+        from app import ood
+
+        g = ood.OODGate.fit([10, 10.1, 9.9, 10.0, 9.95], z=3.0)
+        if g.is_ood(10.0) or not g.is_ood(50.0):
+            chk.fail("OOD gate misbehaves (§Y)")
+    except Exception as exc:  # noqa: BLE001
+        chk.fail(f"ood module error: {exc}")
+
+    # §AP/§BH — propagated speed interval is positive and tier-ordered (T1 > T3);
+    # the fabricated ±30% interval is gone.
+    try:
+        from app import uncertainty as unc
+
+        h1 = unc.speed_uncertainty(60.0, 20.0, tier="t1")[0]
+        h3 = unc.speed_uncertainty(60.0, 20.0, tier="t3")[0]
+        if not (h1 > h3 > 0):
+            chk.fail("speed uncertainty must be positive and T1 > T3 (§AP/§BH)")
+
+        # §BH — the SNR significance gate: a tiny displacement (SNR < SNR_MIN) is
+        # NOT significant (caller must abstain); a large one is. Tied to the
+        # measurement's own SNR, not to detection confidence.
+        lo = unc.speed_uncertainty(60.0, 1.0, tier="t1", sigma_px=2.0)[1]
+        hi = unc.speed_uncertainty(60.0, 60.0, tier="t1", sigma_px=2.0)[1]
+        if lo.get("significant") is not False or hi.get("significant") is not True:
+            chk.fail("speed SNR significance gate misbehaves (§BH)")
+        if not (getattr(unc, "SNR_MIN", 0) >= 1.0):
+            chk.fail("uncertainty.SNR_MIN must be a sane (>=1) threshold (§BH)")
+    except Exception as exc:  # noqa: BLE001
+        chk.fail(f"uncertainty module error: {exc}")
+
+    # §H.6 — correlated required components compose by min, never by an
+    # independence-assuming product that double-counts shared error.
+    if rel.compose([0.8, 0.8], "required_all") != 0.8:
+        chk.fail("required_all of correlated endpoints must be the minimum (§H.6)")
+
+    chk.info["engine"] = "ok"
+    return chk
