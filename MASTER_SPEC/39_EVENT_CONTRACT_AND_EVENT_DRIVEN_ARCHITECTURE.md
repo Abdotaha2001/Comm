@@ -322,6 +322,78 @@ The event layer conforms **iff**:
 - **T.7** Versioning is additive-by-default; a breaking change introduces a new `event_version` with a deprecation window (§P).
 - **T.8** Every event traces end-to-end (aggregate → ontology → consumer → Part) (§S).
 
+---
+
+## U. Commands, Events & Queries (CQRS boundary)
+- **Commands** are imperative requests that **MAY be rejected** (validation/authz/business rule); they map to the write API (Part 37 §O). A command is **NOT** an event.
+- An accepted command **MUST** produce a state change **and** emit one or more **events** (past-tense facts, immutable) via the outbox (§I).
+- **Queries** read **projections / read models** built by consumers (e.g. a denormalized match view); read models are **eventually consistent** and **MUST** expose their staleness (Part 34.BE).
+- Write side (commands→events) and read side (projections) **MAY** scale independently (CQRS); the relational store remains the system of record (§B.1).
+
+## V. Sagas & process managers (distributed workflows)
+- Cross-context workflows **MUST** be modeled as **sagas** (a chain of local transactions, each emitting an event that triggers the next), never a distributed two-phase commit.
+- **Flagship saga:** `video.uploaded → analysis.run.completed → profile.rebuilt → matchup.created → matchup.gameplan.ready → notification.requested`. Each step is idempotent and independently retryable.
+- **Choreography** (events trigger steps) is the default; **orchestration** (a process manager) **SHOULD** be used where a step needs cross-context coordination or a timeout.
+- **Compensation:** a failed step **MUST** trigger forward **compensating events** (mark failed, notify, release locks) — there is no cross-service rollback, only compensation.
+- Each saga **MUST** have a **timeout** and a **terminal state**; a stalled saga **MUST** alert (Part 34.BA).
+
+## W. Aggregate event state machines
+- Each aggregate has a **legal state machine**; an event **MUST** correspond to a legal transition, and an illegal transition **MUST** be rejected (Part 37 §F).
+- `video`: `uploaded → analyzing` (run.started) `→ done` (run.completed) `| failed` (run.failed) `→ archived`.
+- `analysis_run`: `queued → processing → done | failed`; `done`/`failed` are **terminal** (re-analysis = a new run, never a mutation).
+- `capture_session`: `started → ended`; `capture.certified` emitted against the run.
+- `game_plan`: `draft → final → archived`; `gameplan.outcome.recorded` is a post-terminal annotation.
+- A consumer applying an event **MUST** verify the source state (optimistic, Part 34.AQ) and **MUST** ignore or quarantine an event whose `sequence` does not match the expected next state.
+
+## X. Schema registry & contract compatibility
+- The **registry** (`events.py` + `events_catalog.json`, §Q) is the SSoT for every `type → event_version → payload schema`. A producer **MUST NOT** emit a type/version absent from it.
+- **Default compatibility = BACKWARD** (new consumers read old events). Safe without a version bump: add an **optional** field; add an enum value (consumers tolerate unknown, §P.2). Breaking → **new `event_version`** (§P.3).
+- **Consumer-driven contracts:** each consumer **MUST** declare the fields it depends on; CI **MUST** fail a producer change that breaks a registered consumer contract (§R; Part 34.AP).
+
+| Change to a payload | Compatible? |
+|---|---|
+| add optional field · add enum value · loosen validation | ✅ (no bump) |
+| remove field · rename field · change type · add required field · tighten validation · change meaning | ❌ (new `event_version`) |
+
+## Y. Partitioning, consumer groups & scaling
+- **Partition key MUST be `aggregate_id`** so per-aggregate ordering (§H.2) is preserved within a partition; cross-partition order is **not** guaranteed.
+- **Tenant isolation:** `org_id` **SHOULD** be a routing dimension so one tenant cannot starve others (Part 34.AO).
+- **Consumer groups** scale horizontally; a partition is handled by at most one consumer per group (ordering); parallelism is bounded by partition count.
+- **Hot partitions** (a busy aggregate/tenant) **MUST** be detectable and mitigated via backpressure (§N) — never by breaking ordering.
+
+## Z. Event observability & SLOs
+- The platform **MUST** expose per type/consumer: **publish lag** (state-change→published), **consumer lag** (published→processed), **end-to-end latency**, **throughput**, **DLQ depth**, **redelivery rate** (Part 13/34.L).
+- **Tracing:** `correlation_id` + `causation_id` (§C) **MUST** let an operator reconstruct an event chain / saga end-to-end.
+- **SLO defaults (normative):** outbox publish-lag p95 < 5 s; consumer-lag p95 < 30 s; steady-state DLQ depth = 0 (any entry alerts). Breaches **MUST** page on-call (Part 34.BA).
+
+## AA. Replay, reprocessing & snapshots
+- The outbox/event log **MUST** be **replayable** to rebuild a derived artifact / read model (profiles, dossiers, projections — Part 34.BE) and to **backfill a new consumer**.
+- Replay **MUST** be **idempotent** (consumers dedupe, §H), tenant-scopable, and time-bounded.
+- **Snapshots** of expensive read models **SHOULD** bound replay cost (replay from the last snapshot, not genesis).
+- A replay **MUST NOT** re-fire external side effects (webhooks/notifications) unless in an explicit, gated, audited "side-effecting replay" mode (§O).
+
+## AB. Event testing strategy
+- **Unit:** every event validates against the envelope (§C) + payload schema (§G); negative tests for closed-envelope rejection and the PII denylist (§R.4).
+- **Contract:** consumer-driven contract tests (§X) run in CI per producer/consumer pair.
+- **Integration:** outbox → relay → consumer, asserting the transactional outbox (a crash between state write and publish loses nothing, §I) and idempotent re-delivery.
+- **Chaos:** inject duplicate / out-of-order / delayed / poison events and broker-down; assert ordering, dedupe, DLQ, and zero data loss (Part 34.AZ).
+
+## AC. Subscription authorization & payload encryption
+- **Subscription authz:** a consumer/webhook **MUST** be authorized for the `org_id` and the event types it receives; cross-tenant subscription **MUST** be denied (Part 37 §N).
+- **By reference for sensitive data:** events touching medical/minor data **MUST** keep it by reference (ids + signed URL); if a sensitive value must travel, it **MUST** be field-encrypted with a rotating key (Part 34.AF/AJ).
+- **Integrity:** evidentiary events carry `provenance_hash`; broker transport **MUST** be TLS; webhooks are HMAC-signed (§K, Part 31).
+- **Key rotation:** webhook + encryption keys **MUST** support two valid keys during rotation (Part 34.AF).
+
+## AD. Event granularity (fat vs thin)
+- **Default: thin events** — ids + the minimal facts a consumer needs + a signed fetch URL for bulk/sensitive data (§K). Thin events keep the relational store authoritative and avoid PII sprawl (§O).
+- **Event-carried state transfer (fat events)** **MAY** be used where a consumer needs **autonomy** (no callback) for decoupling/performance — but **MUST NOT** duplicate the system of record nor carry PII, and the carried state **MUST** be versioned (§P).
+- The granularity choice per type **MUST** be recorded in the registry (§Q).
+
+## AE. Time semantics & late events
+- Every event carries **event-time** (`occurred_at`); consumers **MUST** distinguish it from **processing-time** (Part 34.AC).
+- Clocks **MUST** be NTP/PTP-synced (Part 35.L); the system **MUST** tolerate bounded **clock skew** and **MUST NOT** assume `occurred_at` is globally monotonic across producers — use `sequence` for per-aggregate order (§H).
+- **Late / out-of-order** events within an aggregate **MUST** be reordered by `sequence` or quarantined; windowed aggregations **MUST** define an allowed lateness + watermark.
+
 This document is the authoritative event contract for TT-OS; the data model (Part 37), ontology (Part 38), and this event contract together form the platform's build foundation.
 
 ---
