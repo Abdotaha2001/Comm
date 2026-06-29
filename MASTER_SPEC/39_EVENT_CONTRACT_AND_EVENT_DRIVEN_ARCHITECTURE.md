@@ -757,6 +757,81 @@ Every event has a **permanent `EV-####` identifier** (immutable for the platform
 
 Rules: a new event **MUST** be appended with the next `EV-####` (never reuse a retired id); deprecation sets `status: deprecated` + `replaced_by` (§P); the registry, `events_catalog.json`, and `events.py` **MUST** agree (CI drift gate, §R / Part 34.AP).
 
+---
+
+## AV. Event API Documentation (AsyncAPI)
+
+- The event surface **MUST** be documented as an **AsyncAPI** specification (`api/asyncapi.yaml`) — the event analog of the OpenAPI HTTP contract (Part 37 §Y). It **MUST** be **generated from the canonical registry (§AU) + catalog (§Q)**, never hand-drifted.
+- It **MUST** describe every **channel** (topic), **message** (event `type` + headers = the envelope §C), and **payload schema** (§G/§AP/§AQ/§AR), plus operations (who publishes/subscribes, §AG) and `event_version`.
+- It is the **discoverability source** for integrators; consumer/producer stubs **SHOULD** be generated from it. CI **MUST** fail if it drifts from the registry (drift gate, §R / Part 34.AP).
+- Status: ⬜ `SPECIFIED` (build target alongside `events.py`).
+
+## AW. CloudEvents Conformance & Interoperability
+
+- The envelope (§C) **MUST** be expressible as a **CNCF CloudEvents 1.0** message for external interoperability. Canonical mapping:
+
+| CloudEvents 1.0 | TT-OS envelope (§C) |
+|-----------------|---------------------|
+| `id` | `event_id` |
+| `type` | `type` |
+| `source` | the producing service URI + `aggregate_type` |
+| `subject` | `aggregate_id` |
+| `time` | `occurred_at` |
+| `specversion` | `"1.0"` |
+| `dataschema` | `data_schema` |
+| `data` | `data` |
+| extensions `orgid, sequence, correlationid, causationid, idempotencykey, provenancehash` | the remaining envelope fields |
+
+- External/webhook deliveries (§K) **SHOULD** use the CloudEvents **structured JSON** binding; internal transport **MAY** use the native envelope. Conformance keeps the platform interoperable with standard tooling **without** changing the contract.
+
+## AX. Multi-Region, Replication & Data Residency
+
+- Each aggregate has a **home region**; per-aggregate ordering (§H) is guaranteed **within** the home region. The single-writer-per-aggregate rule (§AG) means cross-region write conflicts cannot arise for owned events.
+- Events **MAY** be **replicated read-only** to other regions for locality/DR; replicas **MUST** preserve per-aggregate `sequence` and **MUST NOT** accept writes.
+- **Data residency (Part 31):** events of a residency-restricted tenant (e.g. EU) **MUST NOT** be replicated outside the permitted geography; residency is a routing constraint on topics/partitions (§Y).
+- **Active-active is NOT permitted** for the same aggregate; the model is **active-passive** failover (§AY).
+
+## AY. Disaster Recovery (RPO / RTO)
+
+- The **outbox is the durable source of truth** for events (§I) and **MUST** be backed up with the relational store (Part 34.AZ), so events survive broker loss.
+- **Targets (normative):** Critical events **RPO = 0** (outbox written in the state-change txn → no loss) with **RTO < 15 min** (broker/relay failover); Normal **RTO < 1 h**; analytics/batch best-effort.
+- **Failover:** a standby broker/relay in the passive region (§AX) takes over; the relay resumes from unpublished outbox rows idempotently (§I).
+- DR restores **MUST** be **tested**, not assumed (Part 34.AZ); a drill **MUST** verify zero event loss and order preservation, and **MUST** include legal-hold/immutable families (§AI).
+
+## AZ. Crypto-Shredding & Right-to-Erasure in Immutable Logs
+
+- Immutable/WORM families (Audit, Officiating, Compliance — §AI/§L) cannot be edited or deleted, which tensions with the right-to-erasure (Part 31). Resolution: **crypto-shredding**.
+- Any PII/MINOR/BIOMETRIC value that must persist in an immutable event **MUST** be **encrypted with a per-subject data key**; the event stores **ciphertext only** (§AO/§AC).
+- **RTBF** (`tt.data.deletion.*`, §F) **MUST** delete the subject's data key, rendering the ciphertext permanently unrecoverable — satisfying erasure **without mutating** the immutable log; the event structure, non-PII facts, and audit tombstone remain.
+- Key custody + rotation follow Part 34.AF; a shredded key **MUST NOT** be recoverable from backups.
+
+## BA. Event Versioning: Upcasting & Coexistence
+
+- Beyond §P: when a `type` reaches a new `event_version`, a registered **upcaster** **MUST** transform a persisted older payload into the current shape **at read/replay time**, so consumers handle a single logical schema.
+- During a deprecation window producers **MAY dual-emit** old + new versions; consumers **MUST** declare a minimum supported version and **MUST** ignore higher minor revisions gracefully (§P.5).
+- Upcasters are pure, versioned, tested functions (§AB) registered with the catalog (§AU); an old `event_version` **MUST NOT** be retired until no stored/queued event of that version remains (or all are upcast).
+
+## BB. Migration & Rollout from the Inline MVP (Strangler)
+
+- Today the pipeline runs **inline** (Part 37 §B.4); the event layer (§Q) is ⬜. Adoption **MUST** be incremental, reversible, and **MUST NOT** change this contract:
+  1. **Emit-only (shadow):** add the outbox (§I) + `emit()` (§Q); produce events alongside existing inline behavior — **no consumer acts** yet.
+  2. **Consume behind flags:** add idempotent consumers (profile rebuild, notifications) behind feature flags (Part 34.AU); compare against inline results.
+  3. **Flip reads:** move read models/projections to event-driven (§U) once validated.
+  4. **Decouple:** retire the inline coupling; the broker becomes the integration path.
+- Each step is independently shippable and **MUST** be reversible by a flag.
+
+## BC. Cost & Volume Governance
+
+- High-volume families (physics §AQ, hardware telemetry §AR) **MUST** be **sampled/aggregated at the edge**, not published verbatim (§AN), and default to short retention (§AI).
+- **Per-tenant volume quotas** **MUST** bound emission so one tenant cannot inflate cost or starve others (§Y / Part 34.AO); a breach throttles Bulk/Background first (§AM).
+- Retention tiering (§AI) **MUST** move cold events to cheap storage; broker/storage/egress cost **SHOULD** be monitored with budget alerts (Part 34.AS).
+
+## BD. Consumer Offset & Checkpoint Semantics
+
+- With at-least-once delivery (§H), a consumer **MUST** commit its offset/checkpoint **only after** the event is **successfully and idempotently processed** (process-then-commit) — never before — so a crash redelivers rather than skips.
+- Checkpoints are **per (consumer-group, partition)** (§Y); on rebalance, a partition's new owner **MUST** resume from the last committed offset.
+- A processing failure **MUST NOT** advance the offset; the event is retried then dead-lettered (§AJ). Offsets/checkpoints **MUST** be durable and survive consumer restarts.
+
 This document is the authoritative event contract for TT-OS; the data model (Part 37), ontology (Part 38), and this event contract together form the platform's build foundation.
 
 ---
