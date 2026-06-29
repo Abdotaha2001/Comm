@@ -206,7 +206,7 @@ The following **MUST NOT** occur and **SHOULD** be lint/CI-detectable (§T):
 | Per-value reliability engine | `backend/app/reliability.py` | envelope · status (§E) · compose (§H) · tier cap (§I) · abstain (§F) | ✅ |
 | Calibration metrics + calibrators + gate | `backend/app/calibration.py` | ECE/MCE/Brier/PICP · temperature scaling · `passes_gate` (§G.4) | ✅ |
 | Reliability CI gate | `backend/tools/governance/reliability.py` (`check_reliability`) | enforces no-averaging, bands, caps, calibration gate in CI | ✅ |
-| Calibration metrics in the golden report | `backend/app/benchmark.py` (extend) | wire ECE/PICP into the Part-29 gate | 🟡 |
+| Calibration metrics in the golden report | `backend/app/benchmark.py` (`run_calibration_benchmark`) | ECE/MCE/Brier + PICP on the golden set; temperature-scaling improvement (Part 29) | ✅ |
 | Thresholds config | settings / per-model config | abstain thresholds (no magic numbers) | 🟡 |
 
 `reliability.py` exposes the envelope constructor, the status mapper (§E), `compose` (§H, product/min — never average), the tier cap (§I, reusing the Part-35 certification ceilings), and the abstain decision (§F); producers **MUST** route measured outputs through it. The CI gate `check_reliability` (governance job) enforces these invariants on every push.

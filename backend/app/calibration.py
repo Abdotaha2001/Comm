@@ -123,6 +123,13 @@ def fit_temperature(
     return (a + b) / 2
 
 
+def nll(confidences: Sequence[float], correct: Sequence[bool]) -> float:
+    """Negative log-likelihood (the proper score temperature scaling minimizes)."""
+    if not confidences:
+        return 0.0
+    return _nll(list(confidences), [1.0 if v else 0.0 for v in correct])
+
+
 def calibration_report(confidences: Sequence[float], correct: Sequence[bool], n_bins: int = 10) -> dict:
     """The reliability section of a model card (Part 40 §BE/§N)."""
     return {
