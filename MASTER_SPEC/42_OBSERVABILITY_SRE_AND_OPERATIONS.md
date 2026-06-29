@@ -6,7 +6,7 @@
 >
 > **If implementation conflicts with this document, this document wins** — except where marked `SPECIFIED`. It **formalizes the scattered observability/SLO conventions of Part 34 §L/§AE and Part 13 for build**; those remain the readable overview. RFC-2119 keywords (`MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, `MAY`) are normative.
 >
-> **Status legend:** ✅ `IMPLEMENTED` (grounded in `backend/`) · 🟡 `PARTIAL` · ⬜ `SPECIFIED` (build target). Honesty rule (Part 41 §B.5): a capability is ✅ only if it is in code. Today that is `/healthz`, the golden-set accuracy gate, and the per-run reliability/provenance telemetry; the metrics/traces/SLO/alerting stack is ⬜ and tracked (§T).
+> **Status legend:** ✅ `IMPLEMENTED` (grounded in `backend/`) · 🟡 `PARTIAL` · ⬜ `SPECIFIED` (build target). Honesty rule (Part 41 §B.5): a capability is ✅ only if it is in code. Today that is `/healthz`, the golden-set accuracy gate, and the per-run reliability/provenance telemetry; the metrics/traces/SLO/alerting stack is ⬜ and tracked (§Z).
 
 ---
 
@@ -23,7 +23,7 @@ Make the platform **observable, operable, and recoverable**: every user-facing p
 - **G5.** Incidents follow a defined **detect → respond → recover → blameless-postmortem** loop (§J), unified with Part 40 §BO + Part 41 §T.
 - **G6.** Telemetry **never** leaks PII/secrets/tokens/full media URLs (§R, Part 41 §K.3) and is **cost- and cardinality-bounded**.
 - **G7.** **Honesty is observable** (§S): abstention rate, calibration health, OOD rate, and capture-tier mix are dashboarded — a silently-overconfident model is an operational incident.
-- **G8.** Observability invariants are **CI-enforced** (§U), not left to goodwill.
+- **G8.** Observability invariants are **CI-enforced** (§AA), not left to goodwill.
 
 ### A.3 Non-goals
 - Not the reliability law (Part 40) — it **observes** Part 40's confidence/calibration in production.
@@ -56,6 +56,8 @@ Formalizes Part 34 §L (logging/observability) + §AE (SLOs/error budgets/runboo
 - **C.3 Traces.** Requests **MUST** carry a **distributed trace** (e.g. OpenTelemetry) across API → worker → CV/model → DB, so a slow/failed analysis is attributable to a span; trace context propagates through the event bus (Part 39).
 - **C.4 The three pillars are linked.** A log line, a metric exemplar, and a trace span for the same request **MUST** share the correlation ids (§D) so an operator pivots between them in one click.
 - **C.5 Provenance is telemetry.** The reliability `source` (model/code_sha/tier, Part 40 §J) is attached to telemetry so production behavior is tied to the exact version that produced it.
+- **C.6 Dynamic log levels.** Log verbosity **SHOULD** be adjustable at runtime (per service/module) **without redeploy**, so an operator can raise detail mid-incident; default is `INFO`, with sampled `DEBUG`.
+- **C.7 Aggregation & retention tiers.** Frequently-queried aggregates use **recording/rollup rules**; raw high-resolution metrics are short-lived and **downsampled** for long-term trend retention (§R.4) — full fidelity is not kept forever.
 
 ## D. Telemetry Schema & Correlation
 
@@ -83,6 +85,7 @@ Formalizes Part 34 §L (logging/observability) + §AE (SLOs/error budgets/runboo
 - **E.3 Error budget.** `budget = 1 − SLO`. Burn is tracked; **fast-burn** + **slow-burn** alerts (multi-window) page before the budget is exhausted.
 - **E.4 Error-budget policy.** When the budget is **exhausted**, non-essential **releases freeze** and reliability work takes priority until recovered (§N); spending the budget on velocity is fine **until** it runs out (Part 34 §AE).
 - **E.5 SLO ≠ SLA.** Internal SLOs are stricter than any external **SLA**; breaching an SLO is an internal signal, not automatically a customer-facing breach.
+- **E.6 SLO-as-code.** SLIs/SLOs/error-budget policies are **version-controlled, reviewed, tested artifacts** (e.g. OpenSLO), not dashboard clickops; a target change is a tracked, audited deploy (Part 34.AL).
 
 ## F. Golden Signals (RED / USE)
 
@@ -115,8 +118,10 @@ This is what makes the platform's observability **more than generic SRE**: produ
 - **I.1 Symptom-based.** Page on **SLO burn** / user-visible symptoms (§E/§F/§H), not on causes (high CPU alone never pages).
 - **I.2 Actionable + runbook.** Every paging alert links a **runbook** (§K) and a clear action; non-actionable signals go to dashboards/tickets, not pages (§B.5).
 - **I.3 Severity + escalation.** Severity ladder (SEV1–SEV4) with defined response times (Part 41 §AK MTTD/MTTR); auto-escalation if unacknowledged.
-- **I.4 On-call hygiene.** Sustainable rotation, follow-the-sun where possible, **alert-fatigue** review (delete/auto-resolve noisy alerts), and **toil** tracked + reduced.
+- **I.4 On-call hygiene.** Sustainable rotation, follow-the-sun where possible, **alert-fatigue** review (delete/auto-resolve noisy alerts), and **toil tracked + capped** (SRE convention: ≤ ~50 % of on-call time; excess toil funds automation, §K.5).
 - **I.5 Multi-window burn alerts.** Fast-burn (page now) + slow-burn (ticket) per SLO (§E.3) to catch both outages and slow degradations.
+- **I.6 Routing, dedup & inhibition.** Alerts are **de-duplicated, grouped, and routed** by severity/owner to the right on-call; **inhibition** rules suppress downstream alerts when a root-cause fires; scheduled **maintenance/silence windows** mute expected noise.
+- **I.7 Alert quality is tested.** Alerts are themselves **tested to fire** (alert unit tests); **alert precision** (page→action ratio) is tracked, and chronically non-actionable alerts are deleted or demoted (§B.5).
 
 ## J. Incident Management
 
@@ -132,6 +137,7 @@ This is what makes the platform's observability **more than generic SRE**: produ
 - **K.2 Ownership.** Every service/endpoint has an owner (CODEOWNERS, Part 34.P) accountable for its SLOs, dashboards, and on-call.
 - **K.3 Operational-readiness review (ORR)** before a service reaches prod: SLOs defined, dashboards + alerts wired, runbook written, on-call staffed, load-tested (§L), DR tested (Part 41 §U), telemetry-privacy reviewed (§R).
 - **K.4 Game days.** Periodic on-call training + **chaos/failure-injection** drills (dependency loss, region failover) validate runbooks and degrade paths (§B.8).
+- **K.5 Auto-remediation.** Well-understood, safe responses are **automated** (executable runbooks): restart, scale-out, failover, drain, auto-rollback (§N.2) — cutting toil (§I.4) + MTTR; a human is always **notified and able to intervene**, and automation is bounded (no unbounded restart/scale loops).
 
 ## L. Capacity, Performance & Load
 
@@ -139,12 +145,15 @@ This is what makes the platform's observability **more than generic SRE**: produ
 - **L.2 Load/stress/soak/spike testing** before prod and on major change; a **performance-regression gate** (latency/throughput) complements the accuracy gate (Part 29) — a change that doubles p99 fails.
 - **L.3 Backpressure.** Saturation triggers graceful backpressure (429 + queue, Part 41 §O / Part 39), never silent drops or unbounded queues; per-tenant quotas bound noisy neighbors (Part 41 §F.5).
 - **L.4 Capacity planning.** Forecast from growth telemetry; headroom targets; GPU capacity for the CV/model path is a tracked constraint (Part 12/13).
+- **L.5 Continuous profiling.** **CPU/memory/GPU profiling** (flame graphs, sampled in prod) on the CV/model hot paths localizes regressions a metric can't — the "why is this 200 ms slower" that traces alone don't answer.
+- **L.6 Model-serving observability.** The inference path emits **batch size, queue depth, GPU memory/utilization, cold-start rate, and per-model latency**; GPU saturation is a leading SLI (§F.3) and a cost driver (§M).
 
 ## M. Cost & FinOps Observability
 
 - **M.1 Cost is a signal.** Cost **per tenant / per analysis / per model** is measured + attributed (tags), with **budget alerts** (Part 39 §BC); expensive analysis is a **financial-DoS** vector (Part 41 §O/§F.5).
 - **M.2 Unit economics.** Track $/analysis and $/active-player so pricing + efficiency are data-driven; cold telemetry/events tier to cheap storage (Part 39 §AI; local §R.4).
 - **M.3 Efficiency vs reliability** trade-offs are explicit; cost-cutting **MUST NOT** silently breach an SLO or the reliability law (Part 40).
+- **M.4 Carbon/energy.** Energy + **carbon** of the GPU-heavy CV/model path is measured (Part 15 sustainability); efficiency work reports its carbon impact, not only its $ impact.
 
 ## N. Deployment & Release Observability
 
@@ -159,6 +168,7 @@ This is what makes the platform's observability **more than generic SRE**: produ
 - **O.1 Parity.** dev/stage/prod parity (Part 41 §Y per-env secrets); stage is representative enough to catch perf/behavior regressions.
 - **O.2 Config as data.** Configuration (SLO targets, thresholds, flags) is versioned, validated on load, and auditable (Part 34.AL); a bad config fails fast at startup, not at runtime.
 - **O.3 No secrets/PII in config telemetry** (Part 41 §Y/§K.3; local §R); config changes are change-events (§N markers).
+- **O.4 Dashboards-as-code.** Dashboards are **version-controlled + reviewed**, built from a **golden per-service template**; ad-hoc clickops dashboards and dashboard sprawl are avoided.
 
 ## P. Data & Pipeline Observability
 
@@ -172,14 +182,16 @@ This is what makes the platform's observability **more than generic SRE**: produ
 - **Q.1 Black-box probes.** Synthetic checks exercise **critical user journeys** (Part 32: upload→analyze→profile, login, game-plan) from outside, 24/7, alerting on the user-visible promise — not just internal health.
 - **Q.2 White-box** (the three pillars §C) explains **why** a synthetic probe failed.
 - **Q.3 RUM.** Real-user monitoring captures actual client-side latency/errors for the web/app surfaces (privacy-respecting, §R).
+- **Q.4 Mobile/app observability.** Native/desktop apps report **crashes, ANRs (app-not-responding), app-start + interaction latency, and adoption** (privacy-respecting, §R) — client-side failures are invisible to server metrics.
 
 ## R. Telemetry Privacy, Retention & Cost
 
 - **R.1 No sensitive data in telemetry.** Logs/metrics/traces **MUST NOT** contain PII, tokens, secrets, raw biometric, or full signed media URLs (Part 41 §K.3); scrub + allow-list fields (§C.1).
 - **R.2 Sampling.** High-volume traces/logs are **sampled** (head/tail) — tail-based sampling keeps the interesting (slow/error) traces; metrics aggregate, not per-event.
-- **R.3 Cardinality control.** Metric labels are **bounded** (no user-id/free-text labels) — unbounded cardinality is an outage + cost risk; enforced in CI (§U).
+- **R.3 Cardinality control.** Metric labels are **bounded** (no user-id/free-text labels) — unbounded cardinality is an outage + cost risk; enforced in CI (§AA).
 - **R.4 Retention tiers.** Telemetry retention is tiered (hot→cold→expire, Part 39 §AI); audit (Part 41 §K) has its own longer, tamper-evident retention — **operational telemetry is not the audit log**.
 - **R.5 Telemetry has a budget.** Observability cost is itself monitored (§M); over-instrumentation is a cost + privacy liability.
+- **R.6 Observability access control.** Dashboards/traces/logs can expose sensitive routes/ids; viewing them is **RBAC + tenant-scoped** (Part 41 §E), and access to `special`/`biometric`-adjacent telemetry is **audited** (Part 41 §K) — telemetry is not a back door around access control.
 
 ## S. Observing Reliability & Honesty (the platform's conscience)
 
@@ -188,7 +200,63 @@ This is what makes the platform's observability **more than generic SRE**: produ
 - **S.3 Fairness in production.** Subgroup SLIs (Part 40 fairness / Part 41 §AC.7) are monitored where labels allow; a subgroup served materially worse reliability is an incident, not a backlog item.
 - **S.4 Feedback loop.** Human corrections/overrides + officiating reviews feed back as production labels (Part 30) for monitoring + recalibration (Part 40 §AJ).
 
-## T. Build-Artifacts Status (honest, grounded in `backend/`)
+## T. Statistical Rigor of Latency & Percentiles
+
+Operational statistics **MUST** be as honest as the reliability law (Part 40 §B.3): a wrong aggregate hides real user pain.
+
+- **T.1 Never average percentiles.** A p95 obtained by averaging per-instance/per-window p95s is **mathematically meaningless** — percentiles do not average. Cross-instance/cross-window percentiles **MUST** be computed from **merged histograms** (Prometheus native/`_bucket`, t-digest, HdrHistogram), not from averaged summaries.
+- **T.2 Distributions over means.** A mean latency hides the tail; latency SLIs (§E) **MUST** be distribution-based (p95/p99/p99.9). A mean is shown only **with** its distribution, never alone.
+- **T.3 Coordinated omission.** Load tests + client timing **MUST** correct for **coordinated omission** (a stalled server stops accepting requests, so its worst latencies are under-counted) — use open-model load generators / HdrHistogram-style correction, or the tail is silently optimistic.
+- **T.4 Measure at the user's edge.** Latency includes queue + processing + serialization **as the user experiences it**, not just server handler time; the edge-vs-handler gap is itself an SLI.
+- **T.5 Exemplars.** Histogram buckets carry **trace exemplars** (§C.4) so a tail spike links straight to a slow trace.
+- **T.6 Sample-size honesty.** A percentile **MUST** state its window + sample count; a percentile over a handful of requests is reported low-confidence (mirrors Part 40 abstention on thin data).
+
+## U. Dependency SLOs & Critical-Path Composition
+
+- **U.1 Service catalog + dependency graph.** Every service registers **owner, SLO, dependencies, criticality** (§K.2); the dependency graph is maintained, not tribal knowledge.
+- **U.2 Your SLO is bounded by your dependencies.** A request whose critical path crosses hard dependencies at `0.999 × 0.999 × 0.999` cannot exceed **~99.7 %**; an SLO **MUST NOT** be set above what its hard dependencies mathematically permit.
+- **U.3 Hard vs soft dependencies.** A **soft** dependency (degrade/abstain on failure, §B.8) does **not** cap the SLO; a **hard** one does. Each dependency is classified; converting hard→soft (caching, fallbacks, async, abstain) is how the achievable SLO is raised.
+- **U.4 Budget attribution.** On burn, telemetry attributes it to the **responsible dependency** (§T.5 traces) so the fix targets the real cause.
+- **U.5 Per-hop latency budgets.** End-to-end latency SLOs decompose into per-hop budgets along the trace (§C.3); a hop over budget is the regression.
+
+## V. Telemetry Pipeline & Meta-Observability ("who watches the watcher")
+
+- **V.1 Dead-man's-switch.** The most dangerous failure is **silence**. A **heartbeat / dead-man's-switch** alert **MUST** fire when expected telemetry (a metric, a health beat, a cron success) **stops** — absence of signal is itself an alarm (§B.7), not a green dashboard.
+- **V.2 The observability stack is Tier-1.** If metrics/traces/logs stop, the platform is **blind**; the collection pipeline has its own SLOs, on-call, and **meta-monitoring** — a second, independent path watches the first.
+- **V.3 Collection architecture.** Telemetry flows **agents → gateway/collector → backend** (e.g. OTel Collector); the collector **buffers + applies backpressure** so a backend outage queues/drops telemetry **without stalling the request path** — telemetry is best-effort and **MUST NOT** block or crash the app.
+- **V.4 Loss is bounded + visible.** Dropped/sampled telemetry is **counted** on the meta-path, so gaps are known, never silent.
+- **V.5 Observability-system SLOs.** Ingest freshness, **instrumentation/trace coverage** (% of services/routes emitting), and alert-delivery latency are themselves SLIs (§E).
+- **V.6 No circular dependency.** The paging/alert-delivery path **MUST NOT** depend on the system it monitors (an outage cannot also disable its own alarm).
+
+## W. LLM-Layer Observability (Part 11)
+
+The grounded-LLM Q&A (Part 11) is its own observability domain — a wrong-but-fluent answer never throws an exception.
+
+- **W.1 Operational metrics.** Track **tokens** (prompt/completion), latency (incl. time-to-first-token), throughput, **cost-per-query** (§M), and cache-hit rate.
+- **W.2 Quality in production.** Monitor **grounding/faithfulness** and **hallucination** signals (answer-unsupported-by-evidence rate), refusal/abstention rate (Part 40 §F), and **eval-in-prod** on sampled traffic against a rubric (Part 29).
+- **W.3 Prompt/response privacy.** Prompt + completion logs are `personal`/`special` (Part 41 §C): scrub PII (§R.1), redact secrets, access-control + audit the logs (§R.6); raw prompts carrying biometric/health context are **never** logged unredacted.
+- **W.4 Abuse telemetry.** Prompt-injection / jailbreak attempts and tool-call denials (Part 41 §R) are tracked as security SLIs.
+- **W.5 Provider/model drift.** Model or provider version changes are **deploy markers** (§N); post-change quality + cost shifts are caught as regressions.
+
+## X. Edge & Offline Observability (Part 02)
+
+- **X.1 Disconnected venues.** Courtside/edge capture (Part 02) runs with **intermittent connectivity**; telemetry is **store-and-forward** (buffered locally, shipped on reconnect) with bounded local retention — gaps don't lose the record.
+- **X.2 Edge-private mode.** Where video **never leaves the venue** (Part 15 / Part 41 §H.7), observability **MUST** work **without exfiltrating content**: ship **metrics/aggregates/health only**, never raw frames or PII — the privacy guarantee holds in telemetry too.
+- **X.3 Device health.** Edge devices report **battery, thermal, storage, link, and capture quality** (Part 35; Part 41 §AH); degradation pages **before** a session is lost.
+- **X.4 Clock + identity.** Edge telemetry carries device identity/attestation (Part 41 §V) + synced clocks (§D.3) so offline events reconcile on upload.
+- **X.5 Graceful local degradation.** An offline node degrades per §B.8 (cache/queue/lower tier) and surfaces its degraded state on reconnect.
+
+## Y. Product & Business Observability
+
+Operability includes **"are users succeeding?"**, not only "is the system up?".
+
+- **Y.1 Product KPIs.** Track activation, the **funnel** (upload → analyze → profile → game-plan, Part 32), engagement, retention, and a **north-star** (e.g. weekly analyzed players) alongside system SLIs.
+- **Y.2 Journey SLOs.** Critical **user journeys** (Part 32) carry end-to-end SLOs (success rate + latency) measured by synthetic (§Q) + real usage — a journey can be "all services green" yet **failing users**.
+- **Y.3 Feature guardrails.** Flagged features (§N.3) report adoption **+ guardrail metrics**; a feature that lifts engagement but spikes errors/cost is caught.
+- **Y.4 Reliability ↔ business link.** Correlate SLO burn with churn/usage so reliability investment is prioritized by **user + business impact**, not vanity.
+- **Y.5 Honest KPIs.** Business dashboards obey the same distribution-honest, no-vanity rules (§T); a misleading KPI is a defect (§B.7).
+
+## Z. Build-Artifacts Status (honest, grounded in `backend/`)
 
 | Capability | Artifact | Status |
 |------------|----------|--------|
@@ -206,10 +274,18 @@ This is what makes the platform's observability **more than generic SRE**: produ
 | Honesty dashboards (abstention/calibration/OOD) | Part 40 signals exist; not dashboarded | ⬜ |
 | Load/perf-regression gate · synthetic monitoring | — | ⬜ |
 | Cost/FinOps observability | — | ⬜ |
+| Histogram-based percentile SLIs (no averaged percentiles) | — | ⬜ |
+| Dependency SLO graph + service catalog | — | ⬜ |
+| Dead-man's-switch + meta-monitoring of the telemetry pipeline | — | ⬜ |
+| LLM-layer observability (tokens/grounding/cost) | — | ⬜ |
+| Edge/offline (store-and-forward, edge-private) observability | — | ⬜ |
+| Product/business KPIs + journey SLOs | — | ⬜ |
+| Continuous profiling + GPU/model-serving metrics | — | ⬜ |
+| Alert routing/dedup/inhibition + maintenance windows | — | ⬜ |
 
-The core that **exists** is the truthful seed: a health check, a correctness gate, and per-run reliability/provenance signals. The metrics/traces/logs/SLO/alerting stack is **specified and tracked** (⬜) — production-blocking, earned by code, not by intent (Part 41 §B.5).
+The core that **exists** is the truthful seed: a health check, a correctness gate, and per-run reliability/provenance signals. The metrics/traces/logs/SLO/alerting stack — including the percentile rigor (§T), dependency math (§U), meta-monitoring (§V), and LLM/edge/product layers (§W/§X/§Y) — is **specified and tracked** (⬜): production-blocking, earned by code, not by intent (Part 41 §B.5).
 
-## U. Governance & CI Enforcement (observability invariants)
+## AA. Governance & CI Enforcement (observability invariants)
 
 CI **MUST** keep the platform observable by construction (the observability analogue of Parts 37/39/40/41 governance); target home `backend/tools/governance/` (e.g. an `observability.py` check).
 
@@ -223,20 +299,25 @@ CI **MUST** keep the platform observable by construction (the observability anal
 | `slo-defined` | every user-facing route has an SLI/SLO + an alert + a runbook | ⬜ |
 | `label-cardinality` | metric labels are bounded (no user-id/free-text labels) | ⬜ |
 | `no-pii-telemetry` | telemetry fields are allow-listed (Part 41 §R/§K.3) | ⬜ |
+| `dead-mans-switch` | every critical signal/cron has an **absence** alert (§V.1) | ⬜ |
+| `histogram-slis` | latency SLIs come from histograms, **never averaged percentiles** (§T.1) | ⬜ |
+| `slo-as-code` | SLOs/alerts/runbooks are version-controlled artifacts (§E.6) | ⬜ |
 
-- **U.1** Each ✅/🟡 invariant has a test; 🟡→✅ means the CI assertion exists, not just the behavior.
-- **U.2** The build manifest (Part 37 governance) **SHOULD** record the observability-gate result alongside the others.
+- **AA.1** Each ✅/🟡 invariant has a test; 🟡→✅ means the CI assertion exists, not just the behavior.
+- **AA.2** The build manifest (Part 37 governance) **SHOULD** record the observability-gate result alongside the others.
 
-## V. Open Problems & Roadmap (honest)
+## AB. Open Problems & Roadmap (honest)
 
 - **Real-time uncertainty telemetry** (Part 40 §AY) is expensive within latency budgets — distilled UQ heads are the roadmap; until then, sample.
 - **Production correctness without ground truth** — markerless reliability (Part 40 §M) can't be directly verified live; rely on calibration drift (§H.2), OOD (§H.3), and human-override (§H.7) as proxies.
 - **Multi-tenant cardinality/cost** — per-tenant observability at federation scale strains cardinality + cost (§R.3/§M); aggregation + sampling is the bridge.
 - **Subgroup SLIs need labels** — fairness monitoring (§S.3) is gated on subgroup-labeled production feedback (Part 30/40).
+- **LLM hallucination detection in prod** (§W.2) lacks ground truth — grounding/faithfulness proxies + sampled eval are imperfect; the roadmap is reference-free faithfulness scoring + human-in-the-loop review.
+- **Observability vs privacy at the edge** (§X.2) — edge-private mode forbids content exfiltration, so deep debugging from aggregates-only is harder; on-device analysis + privacy-preserving telemetry is the bridge.
 
-## W. Glossary & Notation
+## AC. Glossary & Notation
 
-Canonical via Part 38 where applicable: **SLI / SLO / SLA** (indicator / objective / agreement) · **error budget** (`1−SLO`) · **burn rate** (budget-consumption speed) · **RED** (rate/errors/duration) · **USE** (utilization/saturation/errors) · **golden signals** · **p95/p99** (latency percentiles) · **OTel** (OpenTelemetry) · **trace / span / correlation id** · **cardinality** (label-value count) · **DLQ** (dead-letter queue) · **MTTD/MTTR** (detect/respond, Part 41) · **toil** (manual repetitive ops) · **runbook** · **IC** (incident commander) · **blameless postmortem** · **ORR** (operational-readiness review) · **canary / blue-green** (progressive delivery) · **RUM** (real-user monitoring) · **synthetic monitoring** (black-box probes) · **abstention rate / calibration drift / OOD rate** (honesty SLIs, §H, Part 40). These notations are used across Parts 13/29/34/39/40/41/42.
+Canonical via Part 38 where applicable: **SLI / SLO / SLA** (indicator / objective / agreement) · **error budget** (`1−SLO`) · **burn rate** (budget-consumption speed) · **RED** (rate/errors/duration) · **USE** (utilization/saturation/errors) · **golden signals** · **p95/p99** (latency percentiles) · **OTel** (OpenTelemetry) · **trace / span / correlation id** · **cardinality** (label-value count) · **DLQ** (dead-letter queue) · **MTTD/MTTR** (detect/respond, Part 41) · **toil** (manual repetitive ops) · **runbook** · **IC** (incident commander) · **blameless postmortem** · **ORR** (operational-readiness review) · **canary / blue-green** (progressive delivery) · **RUM** (real-user monitoring) · **synthetic monitoring** (black-box probes) · **coordinated omission** (under-counted tail latency, §T.3) · **histogram / t-digest / HdrHistogram** (mergeable percentiles) · **dead-man's-switch** (absence-of-signal alert, §V.1) · **meta-monitoring** (watching the observability stack) · **OTel Collector** (telemetry pipeline) · **SLO-as-code / OpenSLO** · **dashboards-as-code** · **continuous profiling / flame graph** · **exemplar** (metric→trace link) · **recording rule / downsampling** · **time-to-first-token (TTFT)** · **grounding / faithfulness** (LLM honesty, §W.2) · **ANR** (app-not-responding) · **store-and-forward** (offline telemetry, §X.1) · **north-star / funnel** (product KPIs, §Y) · **dependency SLO / critical path** (§U) · **abstention rate / calibration drift / OOD rate** (honesty SLIs, §H, Part 40). These notations are used across Parts 13/29/34/39/40/41/42.
 
 This document is the authoritative operability law for TT-OS; with the data model (37), ontology (38), event contract (39), reliability law (40), and security law (41), it completes the platform's build foundation — **structure, meaning, communication, honesty, trust, and operability.**
 
