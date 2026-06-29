@@ -577,8 +577,8 @@ Honest acknowledgment (ties Part 36 risks) — these are hard and partially unso
 
 Symbols/terms (canonical via Part 38 where applicable): `c` confidence · `ci=[lo,hi]` interval · `τ` capture tier · `σ` source/provenance · `s` status · **ECE/MCE** calibration error · **PICP** interval coverage · **aleatoric** (data noise) vs **epistemic** (model ignorance) · **OOD** out-of-distribution · **selective accuracy** (accuracy on non-abstained) · **`abstain`** (Part 38) the decline-to-assert state · **`u_c` / `k` / `U`** GUM uncertainties (§BH). This notation is used across Parts 10/29/35/39/40.
 
-This document is the authoritative reliability law for TT-OS; together with the data model (37), ontology (38), and event contract (39), it completes the platform's build foundation: **structure, meaning, communication, and honesty.**
+This document is the authoritative reliability law for TT-OS; together with the data model (37), ontology (38), and event contract (39), it forms the core of the platform's build foundation — **structure, meaning, communication, and honesty.** Part 41 adds the fifth pillar — **trust & safety** (security, privacy & compliance).
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `41_SECURITY_PRIVACY_AND_COMPLIANCE.md`**
