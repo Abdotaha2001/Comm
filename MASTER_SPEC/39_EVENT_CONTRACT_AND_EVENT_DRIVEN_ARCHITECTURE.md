@@ -394,6 +394,369 @@ The event layer conforms **iff**:
 - Clocks **MUST** be NTP/PTP-synced (Part 35.L); the system **MUST** tolerate bounded **clock skew** and **MUST NOT** assume `occurred_at` is globally monotonic across producers — use `sequence` for per-aggregate order (§H).
 - **Late / out-of-order** events within an aggregate **MUST** be reordered by `sequence` or quarantined; windowed aggregations **MUST** define an allowed lateness + watermark.
 
+---
+
+## AF. Event Taxonomy
+
+This is the **authoritative classification**; it refines the working categories of §E. Every event **MUST** belong to **exactly one primary taxonomy** (recorded in the registry, §AU). The §E categories map in as: domain→Domain, integration→Integration, audit→Audit, reliability→AI/ML, capture→Capture, analysis→System (pipeline lifecycle) + AI/ML (outputs), notification→Notification.
+
+| Taxonomy | Purpose | Owner | Lifetime | Examples | Allowed publishers | Allowed subscribers |
+|----------|---------|-------|----------|----------|--------------------|---------------------|
+| **Domain** | a business fact/state change | owning bounded context | warm | `player.created`, `matchup.gameplan.ready` | the owning service only (§AG) | any authorized context |
+| **Integration** | outbound to third parties | Integration ctx | warm | webhook deliveries (§K) | webhook relay | external endpoints (allow-listed) |
+| **System** | platform process lifecycle | Platform ctx | warm | `analysis.run.*`, `inference.job.*` | the executing service | monitoring, dependent steps |
+| **Infrastructure** | broker/relay/storage/deploy health | Platform/SRE | short | `webhook.delivery.failed`, DLQ, relay lag | relay/infra components | on-call, monitoring |
+| **Audit** | sensitive action record | Compliance ctx | long (immutable) | `officiating.call.*`, `admin.role.changed` | any context (write-through) | audit store only |
+| **Security** | authn/authz signal | Identity/Security | long | `security.login.failed`, `access.denied` | Identity ctx | SIEM, rate-limit, audit |
+| **AI/ML** | model/training/inference/reliability | AI Models ctx | warm | §AP catalog | AI Models / Analysis | dashboard, MLOps, analysis |
+| **Capture** | capture session + hardware | Capture ctx | warm | §AR catalog, `capture.certified` | Capture service / edge | analysis, operator dashboard |
+| **Analytics** | efficacy/usage/product metrics | Analytics ctx | warm | `gameplan.outcome.recorded` | Analytics/Intelligence | analytics store (no PII, §AO) |
+| **Notification** | user-facing message request | Notification ctx | short | `notification.requested` | any context | notification service |
+| **Compliance** | consent/DSAR/RTBF/legal | Compliance ctx | long | `consent.*`, `data.export/deletion.*` | Compliance ctx | DSAR/retention workers, audit |
+
+A publisher **MUST NOT** emit into a taxonomy it does not own (§AG); a subscriber **MUST** be authorized for the taxonomy + tenant (§AC).
+
+## AG. Aggregate Ownership & Publishing Authority
+
+**No service may publish events owned by another bounded context.** For each aggregate (Part 37 §E):
+
+| Aggregate | Owner (authoritative service) | Allowed publishers | Allowed consumers | Forbidden publishers | Source of Truth | Conflict resolution |
+|-----------|-------------------------------|--------------------|-------------------|----------------------|-----------------|---------------------|
+| `organization`,`user` | Identity | Identity | all | anyone else | `users`/`organizations` | last-writer rejected (optimistic, Part 34.AQ) |
+| `player` | Players | Players | Intelligence, Analysis | Analysis, CV | `players` | owner wins; others request via command |
+| `video` | Video | Video ingest | Analysis | Analysis worker | `videos` | immutable after upload |
+| `analysis_run`,`match`,`rally`,`shot` | Analysis | Analysis worker | Intelligence, Reports | Players, Capture | `analysis_runs`+children | append-only; new run, never mutate |
+| `capture_session`,`capture_certification` | Capture | Capture service/edge | Analysis | Analysis | capture tables / Part 35 schema | certification immutable |
+| `player_profile`,`opponent_dossier`,`matchup`,`game_plan` | Intelligence | Intelligence jobs | Notification, Reports | Analysis, CV | derived (Part 34.BE) | recompute, never hand-edit |
+| `model`,`dataset`,`inference_job` | AI Models | MLOps/registry | Analysis | Analysis | registry (Part 12) | registry is authoritative |
+| `audit_log` | Compliance | all (write-through API) | audit store | direct DB writers | append-only log | immutable |
+
+A cross-context need **MUST** be satisfied by issuing a **command** to the owner (§U), which then publishes the owned event — never by a foreign service emitting the event directly. CI **SHOULD** enforce ownership via the producer registry (§AU/§R).
+
+## AH. Event Lifecycle
+
+An event instance progresses through these states; transitions are one-way (no regression) except documented retries.
+
+| State | Meaning | Allowed operations | Next |
+|-------|---------|--------------------|------|
+| **Draft** | constructed in memory, pre-validation | populate envelope (§C) | Validated / (discard) |
+| **Validated** | envelope + payload schema pass (§C/§G) | — | Persisted |
+| **Persisted** | written to the outbox in the state-change txn (§I) | read by relay | Published / Expired |
+| **Published** | emitted to broker/webhook; `published_at` set | deliver | Delivered |
+| **Delivered** | received by ≥1 consumer | process | Consumed / (retry) |
+| **Consumed** | a consumer applied it idempotently (§H) | ack | Acknowledged |
+| **Acknowledged** | all required consumers acked | — | Archived |
+| **Archived** | moved to cold storage per §AI | restore (read-only) | Expired |
+| **Expired** | past retention; eligible for deletion | purge | Purged |
+| **Purged** | removed (or anonymized) per §AI; tombstone kept for audit | — | (terminal) |
+
+Invalid transitions (e.g. Persisted→Acknowledged without Published) **MUST** be rejected. A failed delivery loops Delivered→retry→(Delivered|DLQ) per §AJ. Legal hold (§AI) **MUST** block Expired→Purged.
+
+## AI. Event Retention & Archival Policy
+
+Retention is per **family** (the AF taxonomy + family below). Times are minimums; legal hold overrides all.
+
+| Family | Hot (queryable) | Warm | Cold/archive | Immutable | Deletion |
+|--------|-----------------|------|--------------|-----------|----------|
+| Audit | 90 d | 1 y | **7 y** WORM | yes | only after legal retention; tombstone kept |
+| Security | 90 d | 1 y | 2 y | yes | per policy |
+| Compliance (consent/DSAR/RTBF) | 1 y | 3 y | **life of relationship + legal** | yes | RTBF anonymizes subject, keeps the compliance record |
+| Capture (+ hardware §AR) | 30 d | 90 d | 1 y | no | TTL purge |
+| Analysis / System | 30 d | 90 d | 1 y | no | TTL purge |
+| AI/ML (§AP) | 90 d | 1 y | 2 y (lineage) | model/eval records yes | dataset/model lineage retained for reproducibility |
+| Training/lineage | 1 y | 3 y | per model life | yes | bound to dataset/model version |
+| Notification | 7 d | 30 d | — | no | purge |
+
+**Archive strategy:** events move hot→warm→cold by age (Part 34.BM); cold = object storage, tenant-scoped, restorable. **Cold storage MUST** remain encrypted and access-audited. **Legal hold MUST** freeze any matching events from purge. **Immutable** families use append-only/WORM storage. **Deletion** for user-linked events follows RTBF (anonymize, keep the minimal compliance tombstone, Part 31/34.AJ).
+
+## AJ. Dead-Letter Queue (DLQ) & Retry Policy
+
+Operationalizes §N.
+
+- **Retry strategy:** exponential backoff with full jitter — `delay = min(cap, base · 2^attempt) ± jitter`; `base = 1 s`, `cap = 5 min`.
+- **Maximum retries:** Critical = 10, Normal = 6, Background/Bulk = 3 (priority per §AM); on exhaustion the event moves to the **DLQ** with the full failure context (Part 34.AM/X).
+- **Poison events** (repeated deterministic failure / schema mismatch) **MUST** skip remaining retries and go straight to **quarantine** with the offending payload + validator error.
+- **Replay:** **manual replay** (operator-initiated, default) and **automatic replay** (only for transient infra failures, rate-limited) **MUST** be idempotent (§H) and **MUST NOT** re-fire external side effects unless in side-effecting mode (§AA).
+- **Permanent failure:** after exhausted retries + failed manual replay, the event is marked `permanently_failed` and an incident is opened.
+- **Alert thresholds:** any DLQ entry for an Audit/Security/Compliance/Officiating event → **page immediately**; DLQ depth > 0 steady-state for other families → alert (§Z).
+- **Escalation & ownership:** the **aggregate owner** (§AG) owns its DLQ; unresolved > SLA (§AL) escalates to on-call (Part 34.BA).
+
+## AK. Failure Scenarios & Recovery Matrix
+
+| Failure | Detection | Impact | Recovery | Escalation | Monitoring | Acceptance |
+|---------|-----------|--------|----------|-----------|-----------|-----------|
+| Broker unavailable | publish errors / health probe | events stuck in outbox (not lost) | relay retries; drain on recovery (§I) | SRE on-call | publish-lag, broker up | no event lost; lag recovers < SLA |
+| Producer crash | missing heartbeat / run stuck | state change may be mid-flight | outbox txn is atomic → either both or neither (§I/§B.2) | service owner | run-state, outbox depth | no phantom/lost events |
+| Consumer crash | consumer-lag spike | processing delayed | restart; resume from last offset; idempotent reprocess (§H) | consumer owner | consumer-lag | no double effect |
+| Duplicate delivery | repeated `event_id`/key | potential double effect | consumer dedupe (§H) | — | redelivery-rate | exactly-once *effect* |
+| Out-of-order delivery | `sequence` gap | wrong state if applied | reorder by `sequence` / buffer / quarantine (§AE/§W) | consumer owner | out-of-order count | per-aggregate order preserved |
+| Network partition | timeouts | partial delivery | at-least-once + idempotency heal post-partition | SRE | error-rate | converges, no loss |
+| Clock skew | `occurred_at` anomalies | bad windowing | rely on `sequence`, not wall-clock (§AE) | SRE | NTP/PTP offset | order unaffected by skew |
+| Schema mismatch | validation fail (§C/§G) | unprocessable event | quarantine; producer fix + version bump (§P/§X) | producer owner | schema-fail count | no silent drop |
+| Poison payload | repeated deterministic fail | blocks partition | quarantine immediately (§AJ) | producer owner | quarantine count | partition unblocked |
+| Storage unavailable | outbox write error | command rejected (fail-closed) | command returns 5xx; client retries (§U) | SRE | DB health | no partial commit |
+| Partial publish | published but `published_at` unset | possible re-publish | idempotent relay + consumer dedupe | SRE | outbox anomalies | no double effect |
+| Replay failure | replay job error | stale read model | fix + re-run idempotent replay (§AA) | data owner | replay status | read model rebuilt |
+| Version incompatibility | consumer cannot parse | consumer skips/quarantines | dual-emit during deprecation window (§P) | producer + consumer | version metrics | no break; window honored |
+
+## AL. Event SLA & Operational Objectives
+
+Per **class** (assigned in the registry, §AU; priority §AM). Extends the SLOs in §Z.
+
+| Class | Max publish latency (p95) | Max delivery latency (p95) | Availability | Durability | Monitoring objective |
+|-------|---------------------------|----------------------------|--------------|------------|----------------------|
+| **Critical** (officiating, security, capture.certified) | < 1 s | < 5 s | 99.95% | 11 nines (outbox+broker) | page on any breach/DLQ |
+| **Normal** (domain, analysis lifecycle) | < 5 s | < 30 s | 99.9% | durable | alert on sustained breach |
+| **Background** (profile rebuild, dossier) | < 30 s | < 5 min | 99.5% | durable | dashboard |
+| **Analytics** (efficacy/usage) | < 1 min | < 15 min | 99% | durable | dashboard |
+| **Batch/ML** (training, dataset, benchmark) | minutes | minutes–hours | best-effort | durable | job tracker |
+| **Archive** | n/a | n/a | n/a | cold-durable | integrity check |
+
+Durability target for the outbox is **no event lost on a single-node failure** (§B.2). Breaches **MUST** be measured against §Z metrics.
+
+## AM. Event Priority & Scheduling
+
+| Priority | Used by | Scheduling rule |
+|----------|---------|-----------------|
+| **Critical** | officiating, security, `capture.certified`, `run.failed` | preempt; dedicated lane; never starved |
+| **High** | domain facts needed by a saga step (§V) | ahead of Normal |
+| **Normal** | most domain/system events | FIFO per partition |
+| **Low** | non-urgent notifications | after Normal |
+| **Background** | profile/dossier rebuild | idle capacity |
+| **Bulk** | replay/backfill (§AA), batch ML | lowest; throttled |
+
+- **Starvation prevention:** lower priorities **MUST** receive a guaranteed minimum share (aging) so they are not indefinitely deferred.
+- **Ordering implications:** priority **MUST NOT** reorder events **within** an aggregate partition (per-aggregate order, §H.2) — priority lanes apply **across** aggregates only.
+- **QoS:** Critical lanes **MUST** have reserved capacity; Bulk **MUST** be rate-limited to protect Critical/Normal (Part 34.AO).
+
+## AN. Payload Size & Serialization Rules
+
+- **Format:** UTF-8 **JSON** is the canonical wire format; field keys are `snake_case` (Part 38 §C). A binary format (e.g. Avro/Protobuf) **MAY** be used on the broker provided it is schema-registry-backed (§X) and lossless to the JSON contract.
+- **Maximum payload size:** `data` **MUST** be ≤ **256 KB**. Anything larger **MUST** be passed **by reference** (object id + short-lived signed URL, §K/§AD) — events **MUST NOT** embed media, frames, or large arrays.
+- **Compression:** transport-level compression **SHOULD** be applied for payloads > 8 KB; it **MUST** be transparent to consumers.
+- **Binary attachments:** **forbidden** inline; referenced via the storage interface only (Part 34.AI).
+- **Chunking:** a logical fact **MUST NOT** be split across events; high-volume streams (e.g. §AQ physics) **MUST** be aggregated/summarized, not chunked.
+- **Encoding / validation:** every event **MUST** validate against its registered schema (§X) before Persisted (§AH); invalid → rejected (producer) or quarantined (consumer).
+- **Schema evolution:** additive-only without a version bump (§P/§X).
+
+## AO. Data Classification Within Events
+
+Every payload field **MUST** carry a sensitivity class (declared in the schema, §G/§X). Handling is mandatory:
+
+| Class | Examples | Logging | Encryption | Masking | Retention | Transport |
+|-------|----------|---------|------------|---------|-----------|-----------|
+| **PUBLIC** | counts, enums (`canonical_id`) | ok | standard TLS | none | family default | TLS |
+| **INTERNAL** | ids, versions, scores | ok | TLS | none | family default | TLS |
+| **CONFIDENTIAL** | dossiers, game plans | redact in app logs | TLS; at-rest encryption | partial | family default | TLS |
+| **RESTRICTED** | officiating decisions | audit-only | at-rest + integrity hash | n/a | long (§AI) | TLS + signed |
+| **PII** | names, emails (by reference only) | **never log** | field-encrypt if it must travel | full mask in logs | RTBF-bound | TLS |
+| **MINOR** | any minor's data | **never log**; consent-gated | field-encrypt; by reference | full | strict RTBF | TLS + restricted |
+| **BIOMETRIC** | pose/face-derived identifiers | **never log** | field-encrypt; by reference | full | strict | TLS + restricted |
+| **SECURITY** | tokens, secrets | **never** in events at all | n/a (forbidden in payloads) | n/a | n/a | n/a |
+
+PII/MINOR/BIOMETRIC values **MUST** travel **by reference** (ids + signed URL) by default (§AD/§AC); if a value must be carried, it **MUST** be field-encrypted with a rotating key (Part 34.AF). SECURITY-class material **MUST NOT** appear in any event (§O).
+
+## AP. AI / Machine Learning Event Ontology
+
+`taxonomy = AI/ML`; producers in AI Models / Analysis; consumers in MLOps, analysis, dashboard. Extends the operational subset in §F.
+
+| Type | Trigger | Producer | Consumers | Key payload |
+|------|---------|----------|-----------|-------------|
+| `tt.ml.model.registered` | new model in registry | registry | MLOps | `model_version` |
+| `tt.ml.model.approved` | passes release gate | MLOps | inference | `model_version` |
+| `tt.ml.model.deprecated` | retired | MLOps | inference | `model_version,replaced_by` |
+| `tt.ml.training.started`/`.completed` | training job | trainer | MLOps | `dataset_version,run_id` |
+| `tt.ml.validation.passed` | held-out eval ok | eval | MLOps | `metrics` |
+| `tt.benchmark.passed`/`tt.benchmark.failed` | golden-set gate (Part 29) | eval | release gate, on-call | `metric,target,actual` |
+| `tt.ml.golden_set.failed` | golden gate breach | eval | on-call | `metric,delta` |
+| `tt.ml.calibration.updated` | confidence recalibrated | calibration | reliability | `method,ece` |
+| `tt.reliability.reduced` | confidence lowered | reliability | dashboard | `from,to,reason` |
+| `tt.reliability.capped` | capture cap applied (Part 35.AK) | analysis | dashboard | `cap,certification` |
+| `tt.analysis.run.abstained` | abstain (§F/§M) | analysis | dashboard | `reason,confidence` |
+| `tt.ml.ground_truth.added` | label captured | annotation | datasets | `dataset_version` |
+| `tt.dataset.approved`/`tt.dataset.rejected` | dataset review | data steward | MLOps | `dataset_version,reason` |
+| `tt.dataset.version.published` | dataset versioned | datasets | MLOps | `version` |
+| `tt.ml.retraining.requested` | drift/coverage trigger | MLOps | trainer | `reason` |
+| `tt.reliability.model.drift_detected` | drift monitor (Part 29) | monitor | on-call, MLOps | `metric,delta` |
+| `tt.inference.job.started`/`.completed` | inference unit | inference | analysis | `model_version,run_id` |
+| `tt.model.deployed` | model live | MLOps | inference, audit | `model_version` |
+
+Lifecycle: `registered → approved → deployed → (drift_detected → retraining_requested → training → validation/benchmark → registered) → deprecated`. ML events asserting quality **MUST** carry `provenance_hash` (model+dataset+code versions, Part 34.AK).
+
+## AQ. Physics Engine Event Catalog
+
+`taxonomy = AI/ML` (physics sub-domain); producers in CV/physics; **high-volume + internal** — these **MUST** be sampled/aggregated, not all published externally (§AN), and default to short retention (§AI).
+
+| Type | Meaning | Key payload |
+|------|---------|-------------|
+| `tt.physics.trajectory.estimated` | a ball flight estimated | `rally_id,points,confidence` |
+| `tt.physics.velocity.estimated` | speed estimated | `speed_kmh,confidence` |
+| `tt.physics.acceleration.estimated` | acceleration estimated | `value,confidence` |
+| `tt.physics.spin.estimated` | spin vector estimated | `spin_axis,rpm,confidence` |
+| `tt.physics.magnus.applied` | Magnus model applied (Part 19) | `coefficients` |
+| `tt.physics.bounce.classified` | bounce type identified | `bounce_type,confidence` |
+| `tt.physics.collision.corrected` | racket/table collision corrected | `correction` |
+| `tt.physics.validation.failed` | physics sanity check failed | `check,reason` |
+| `tt.physics.simulation.completed` | forward simulation done | `result,confidence` |
+| `tt.physics.confidence.reduced` | estimate down-weighted | `from,to,reason` |
+
+Every physics estimate **MUST** carry `confidence` and a unit (Part 34.AC); below threshold it **MUST** `abstain` (§M, Part 10).
+
+## AR. Capture Hardware Event Catalog
+
+`taxonomy = Capture` (+ Infrastructure for failures); producers at the edge/capture service; consumers = operator dashboard + analysis. Each maps to a Part 35 KPI/fail-action.
+
+| Type | Meaning | Maps to (Part 35) |
+|------|---------|-------------------|
+| `tt.capture.camera.connected` | camera online | AF (health) |
+| `tt.capture.camera.lost` | camera offline | AF / AS |
+| `tt.capture.frames.dropped` | dropped-frame threshold | AF (dropped_frames) |
+| `tt.capture.calibration.drifted` | calibration residual breach | AH (drift) |
+| `tt.capture.sync.lost` | inter-camera sync breach | AA (sync) |
+| `tt.capture.light.low` | illuminance below floor | AC (lux) |
+| `tt.capture.temperature.high` | sensor over-temp | AF (thermal) |
+| `tt.capture.rolling_shutter.warned` | RS risk on non-GS camera | Z (RS) |
+| `tt.capture.storage.full` | media nearly full | M / AF (storage) |
+| `tt.capture.network.lost` | uplink down → offline buffer | AG (network) |
+| `tt.capture.battery.low` | battery headroom low | AF (battery) |
+| `tt.capture.lens.dirty` | lens occlusion/dirt | R / AD |
+| `tt.capture.occlusion.detected` | play-volume occlusion | AD (occlusion) |
+| `tt.capture.frame.corrupted` | corrupt frame detected | AF |
+| `tt.capture.hardware.failed` | rig fault | T (officiating impact) |
+
+A Critical-impact capture event (sync.lost, hardware.failed during officiating) **MUST** force the affected outputs to a lower tier or **abstain** (Part 35.AK / §M).
+
+## AS. Event Dependency Graph
+
+The canonical chain (a DAG; cf. the saga §V) — **mandatory** (→) vs **optional** (⇢):
+
+```
+video.uploaded → capture.certified → analysis.run.completed → (AI/ML + physics outputs)
+   → profile.rebuilt ⇢ matchup.created → matchup.gameplan.ready → notification.requested
+   → audit (parallel, on every step) → archive (terminal, §AH/§AI)
+```
+
+- **Mandatory dependencies:** `analysis.run.completed` **MUST** be preceded by `video.uploaded`; `matchup.gameplan.ready` **MUST** be preceded by `matchup.created` + a current `profile.rebuilt`.
+- **Optional dependencies:** `capture.certified` is optional (a bare upload skips it, Part 35); profile rebuild **MAY** be triggered by batch rather than each run.
+- **Forbidden cycles:** the graph **MUST** be acyclic; a consumer **MUST NOT** emit an event that (transitively) re-triggers its own trigger for the same `aggregate_id` (infinite loops). The registry (§AU) `related_events` + CI **MUST** detect cycles.
+- **Audit** is a fan-out from every step (parallel), never a dependency for progress.
+
+## AT. Aggregate State Machine Appendix
+
+Expands §W. Each: states · transitions (triggering event) · terminal · invalid · failure handling.
+
+**`video`** — states: `uploaded, analyzing, done, failed, archived`.
+- `uploaded →(run.started) analyzing →(run.completed) done | →(run.failed) failed`; `done|failed →(retention) archived`.
+- Terminal: `archived`. Invalid: `uploaded→done` (no run). Failure: ingest error keeps `uploaded` + emits `video.ingest_failed`.
+
+**`analysis_run`** — states: `queued, processing, done, failed`.
+- `queued →(run.started) processing →(run.completed) done | →(run.failed) failed`.
+- Terminal: `done`, `failed` (immutable; re-analysis = new run). Invalid: any transition out of a terminal state. Failure: worker crash → run stays `processing` until a reaper times it out → `failed`.
+
+**`capture_session`** — states: `started, ended, certified?`.
+- `started →(session.ended) ended`; `capture.certified` annotates the associated run (not a session state). Terminal: `ended`. Failure: `capture.failed`/hardware events (§AR) may end a session early.
+
+**`player_profile`** — states: `building, current, superseded`.
+- `building →(profile.rebuilt) current`; a new rebuild makes the prior `superseded` (versioned, Part 34.BE). Terminal: `superseded`. Invalid: editing a `current` profile by hand. Failure: rebuild error leaves the prior `current` intact.
+
+**`match`** — states: `provisional, confirmed, archived`.
+- created `provisional` with a run; `→(officiating/confirm) confirmed`; `→ archived`. Terminal: `archived`. Officiating events append immutably (§L); an override produces a new immutable record, never a mutation.
+
+**`game_plan`** — states: `draft, final, archived`.
+- `draft →(gameplan.ready) final →(retention) archived`; `gameplan.outcome.recorded` is a post-terminal annotation (Analytics). Terminal: `archived`. Invalid: `archived→final`.
+
+Every consumer applying a transition **MUST** verify the current state (optimistic, Part 34.AQ) and reject/quarantine an out-of-state event (§AK).
+
+## AU. Canonical Event Registry
+
+Every event has a **permanent `EV-####` identifier** (immutable for the platform's lifetime). The registry is the **authoritative source for event identifiers**; `events_catalog.json` (§Q) is its machine-readable projection. Columns: ID · type · taxonomy (§AF) · version · owner (§AG) · producer → consumers · entity (Part 37) · ontology (Part 38) · status. Payload schema refs point to §G/§AP/§AQ/§AR; `related_events` are given by the dependency graph (§AS).
+
+| ID | Type | Taxonomy | V | Owner | Producer → Consumers | Entity (37) | Onto (38) | Status |
+|----|------|----------|---|-------|----------------------|-------------|-----------|--------|
+| EV-0001 | tt.org.created | Domain | 1 | Identity | Identity → provisioning | organization | `organization` | active |
+| EV-0002 | tt.identity.user.registered | Domain | 1 | Identity | Identity → notify,audit | user | `user` | active |
+| EV-0003 | tt.identity.user.disabled | Audit | 1 | Identity | Identity → audit,sessions | user | `user` | active |
+| EV-0004 | tt.admin.role.changed | Audit | 1 | Compliance | Admin → audit | user | `user` | active |
+| EV-0005 | tt.consent.recorded | Compliance | 1 | Compliance | Compliance → audit,analysis-gate | player | `impairment` | active |
+| EV-0006 | tt.consent.revoked | Compliance | 1 | Compliance | Compliance → retention,audit | player | `impairment` | active |
+| EV-0007 | tt.player.created | Domain | 1 | Players | Players → profile | player | `player` | active |
+| EV-0008 | tt.player.archived | Domain | 1 | Players | Players → retention | player | `player` | active |
+| EV-0009 | tt.video.uploaded | Domain | 1 | Video | Video → analysis | video | `video` | active |
+| EV-0010 | tt.video.ingest_failed | System | 1 | Video | Video → notify | video | `video` | active |
+| EV-0011 | tt.capture.session.started | Capture | 1 | Capture | Capture → monitoring | capture_session | `capture_tier` | active |
+| EV-0012 | tt.capture.session.ended | Capture | 1 | Capture | Capture → monitoring | capture_session | `capture_tier` | active |
+| EV-0013 | tt.capture.certified | Capture | 1 | Capture | Capture → analysis,dashboard | analysis_run | `capture_certification` | active |
+| EV-0014 | tt.capture.failed | Capture | 1 | Capture | Capture → operator,notify | capture_session | `capture_failure` | active |
+| EV-0015 | tt.analysis.run.queued | System | 1 | Analysis | Analysis → monitoring | analysis_run | `analysis_run` | active |
+| EV-0016 | tt.analysis.run.started | System | 1 | Analysis | Analysis → monitoring | analysis_run | `analysis_run` | active |
+| EV-0017 | tt.analysis.run.completed | System | 1 | Analysis | Analysis → profile,notify | analysis_run | `reliability` | active |
+| EV-0018 | tt.analysis.run.failed | System | 1 | Analysis | Analysis → notify,on-call | analysis_run | `analysis_run` | active |
+| EV-0019 | tt.analysis.run.abstained | AI/ML | 1 | Analysis | Analysis → dashboard | analysis_run | `abstain` | active |
+| EV-0020 | tt.profile.rebuilt | Domain | 1 | Intelligence | Intelligence → matchup,notify | player_profile | `player_profile` | active |
+| EV-0021 | tt.opponent.dossier.created | Domain | 1 | Intelligence | Intelligence → matchup | opponent_dossier | `opponent_dossier` | active |
+| EV-0022 | tt.matchup.created | Domain | 1 | Intelligence | Intelligence → gameplan | matchup | `matchup` | active |
+| EV-0023 | tt.matchup.gameplan.ready | Domain | 1 | Intelligence | Intelligence → notify | game_plan | `game_plan` | active |
+| EV-0024 | tt.gameplan.outcome.recorded | Analytics | 1 | Analytics | Analytics → efficacy | game_plan | `game_plan` | active |
+| EV-0025 | tt.officiating.call.logged | Audit | 1 | Compliance | Officiating → evidence,audit | match | `violation` | active |
+| EV-0026 | tt.officiating.call.overridden | Audit | 1 | Compliance | Umpire → evidence,audit | match | `let` | active |
+| EV-0027 | tt.security.login.failed | Security | 1 | Identity | Identity → rate-limit,audit | user | `user` | active |
+| EV-0028 | tt.security.token.revoked | Security | 1 | Identity | Identity → sessions,audit | user | `user` | active |
+| EV-0029 | tt.security.access.denied | Security | 1 | Identity | Identity → audit | user | `user` | active |
+| EV-0030 | tt.data.export.requested | Compliance | 1 | Compliance | Compliance → DSAR worker | player | `player` | active |
+| EV-0031 | tt.data.export.completed | Compliance | 1 | Compliance | Compliance → notify | player | `player` | active |
+| EV-0032 | tt.data.deletion.requested | Compliance | 1 | Compliance | Compliance → retention | player | `player` | active |
+| EV-0033 | tt.data.deletion.completed | Compliance | 1 | Compliance | Compliance → audit | player | `player` | active |
+| EV-0034 | tt.notification.requested | Notification | 1 | Notification | any → notification svc | notification | — | active |
+| EV-0035 | tt.webhook.delivery.failed | Infrastructure | 1 | Platform | relay → on-call | webhook_endpoint | — | active |
+| EV-0036 | tt.ml.model.registered | AI/ML | 1 | AI Models | registry → MLOps | model | `model` | active |
+| EV-0037 | tt.ml.model.approved | AI/ML | 1 | AI Models | MLOps → inference | model | `model` | active |
+| EV-0038 | tt.ml.model.deprecated | AI/ML | 1 | AI Models | MLOps → inference | model | `model` | active |
+| EV-0039 | tt.ml.training.started | AI/ML | 1 | AI Models | trainer → MLOps | model | `training` | active |
+| EV-0040 | tt.ml.training.completed | AI/ML | 1 | AI Models | trainer → MLOps | model | `training` | active |
+| EV-0041 | tt.ml.validation.passed | AI/ML | 1 | AI Models | eval → MLOps | model | `validation` | active |
+| EV-0042 | tt.benchmark.passed | AI/ML | 1 | AI Models | eval → release gate | benchmark | `benchmark` | active |
+| EV-0043 | tt.benchmark.failed | AI/ML | 1 | AI Models | eval → on-call | benchmark | `benchmark` | active |
+| EV-0044 | tt.ml.golden_set.failed | AI/ML | 1 | AI Models | eval → on-call | benchmark | `benchmark` | active |
+| EV-0045 | tt.ml.calibration.updated | AI/ML | 1 | AI Models | calibration → reliability | model | `calibration` | active |
+| EV-0046 | tt.reliability.reduced | AI/ML | 1 | Analysis | reliability → dashboard | analysis_run | `reliability` | active |
+| EV-0047 | tt.reliability.capped | AI/ML | 1 | Analysis | analysis → dashboard | analysis_run | `reliability_envelope` | active |
+| EV-0048 | tt.ml.ground_truth.added | AI/ML | 1 | Annotation | annotation → datasets | dataset | `ground_truth` | active |
+| EV-0049 | tt.dataset.approved | AI/ML | 1 | Datasets | steward → MLOps | dataset | `dataset` | active |
+| EV-0050 | tt.dataset.rejected | AI/ML | 1 | Datasets | steward → MLOps | dataset | `dataset` | active |
+| EV-0051 | tt.dataset.version.published | AI/ML | 1 | Datasets | datasets → MLOps | dataset | `dataset` | active |
+| EV-0052 | tt.ml.retraining.requested | AI/ML | 1 | AI Models | MLOps → trainer | model | `training` | active |
+| EV-0053 | tt.reliability.model.drift_detected | AI/ML | 1 | AI Models | monitor → on-call,MLOps | model | `model` | active |
+| EV-0054 | tt.inference.job.started | System | 1 | AI Models | inference → analysis | inference_job | `inference_job` | active |
+| EV-0055 | tt.inference.job.completed | System | 1 | AI Models | inference → analysis | inference_job | `inference_job` | active |
+| EV-0056 | tt.model.deployed | Domain | 1 | AI Models | MLOps → inference,audit | model | `model` | active |
+| EV-0057 | tt.physics.trajectory.estimated | AI/ML | 1 | Analysis | physics → analysis | shot | `rpm` | active |
+| EV-0058 | tt.physics.velocity.estimated | AI/ML | 1 | Analysis | physics → analysis | shot | `statistic` | active |
+| EV-0059 | tt.physics.acceleration.estimated | AI/ML | 1 | Analysis | physics → analysis | shot | `statistic` | active |
+| EV-0060 | tt.physics.spin.estimated | AI/ML | 1 | Analysis | physics → analysis | shot | `spin_axis` | active |
+| EV-0061 | tt.physics.magnus.applied | AI/ML | 1 | Analysis | physics → analysis | shot | `spin_strength` | active |
+| EV-0062 | tt.physics.bounce.classified | AI/ML | 1 | Analysis | physics → analysis | event | `bounce` | active |
+| EV-0063 | tt.physics.collision.corrected | AI/ML | 1 | Analysis | physics → analysis | shot | `hit` | active |
+| EV-0064 | tt.physics.validation.failed | AI/ML | 1 | Analysis | physics → on-call | analysis_run | `reliability` | active |
+| EV-0065 | tt.physics.simulation.completed | AI/ML | 1 | Analysis | physics → analysis | analysis_run | `statistic` | active |
+| EV-0066 | tt.physics.confidence.reduced | AI/ML | 1 | Analysis | physics → dashboard | shot | `confidence` | active |
+| EV-0067 | tt.capture.camera.connected | Capture | 1 | Capture | edge → dashboard | camera | `camera` | active |
+| EV-0068 | tt.capture.camera.lost | Capture | 1 | Capture | edge → operator,analysis | camera | `camera` | active |
+| EV-0069 | tt.capture.frames.dropped | Capture | 1 | Capture | edge → dashboard | camera | `capture_failure` | active |
+| EV-0070 | tt.capture.calibration.drifted | Capture | 1 | Capture | edge → analysis | calibration | `calibration` | active |
+| EV-0071 | tt.capture.sync.lost | Capture | 1 | Capture | edge → analysis | capture_session | `capture_tier` | active |
+| EV-0072 | tt.capture.light.low | Capture | 1 | Capture | edge → operator | capture_session | `lighting` | active |
+| EV-0073 | tt.capture.temperature.high | Capture | 1 | Capture | edge → operator | camera | `sensor` | active |
+| EV-0074 | tt.capture.rolling_shutter.warned | Capture | 1 | Capture | edge → analysis | camera | `camera` | active |
+| EV-0075 | tt.capture.storage.full | Infrastructure | 1 | Capture | edge → operator | capture_session | `environment` | active |
+| EV-0076 | tt.capture.network.lost | Infrastructure | 1 | Capture | edge → operator | capture_session | `environment` | active |
+| EV-0077 | tt.capture.battery.low | Capture | 1 | Capture | edge → operator | camera | `sensor` | active |
+| EV-0078 | tt.capture.lens.dirty | Capture | 1 | Capture | edge → operator | camera | `camera` | active |
+| EV-0079 | tt.capture.occlusion.detected | Capture | 1 | Capture | edge → analysis | capture_session | `occlusion` | active |
+| EV-0080 | tt.capture.frame.corrupted | Capture | 1 | Capture | edge → analysis | video | `capture_failure` | active |
+| EV-0081 | tt.capture.hardware.failed | Infrastructure | 1 | Capture | edge → on-call | camera | `capture_failure` | active |
+
+Rules: a new event **MUST** be appended with the next `EV-####` (never reuse a retired id); deprecation sets `status: deprecated` + `replaced_by` (§P); the registry, `events_catalog.json`, and `events.py` **MUST** agree (CI drift gate, §R / Part 34.AP).
+
 This document is the authoritative event contract for TT-OS; the data model (Part 37), ontology (Part 38), and this event contract together form the platform's build foundation.
 
 ---
