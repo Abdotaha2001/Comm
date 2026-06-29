@@ -11,6 +11,7 @@ import pytest
 from tools.governance import (
     check_entities,
     check_openapi,
+    check_reliability,
     check_shared_fields,
     check_traceability,
     run_all,
@@ -37,6 +38,7 @@ def test_individual_checks_pass():
     assert check_entities().ok
     assert check_shared_fields().ok
     assert check_traceability().ok
+    assert check_reliability().ok
 
 
 # --------------------------------------------------------------------------- #

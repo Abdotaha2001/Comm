@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
+from . import reliability
 from .cv.pipeline import analyze_video
 from .models import AnalysisRun, Event, Match, Rally, Shot, Video
 
@@ -131,6 +132,10 @@ def analyze_run(
         run.input_quality = {
             "fps": result["fps"], "width": result["width"], "height": result["height"],
             "detection_rate": result["detection_rate"], "speed_calibrated": False,
+            # Per-value reliability engine (Part 40): tier-capped status for the run.
+            "reliability": reliability.summarize(
+                result["reliability_index"], tier=video.capture_tier, calibrated=False
+            ),
         }
         run.model_versions = {"ball_detector": result["detector"]}
 

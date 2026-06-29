@@ -9,6 +9,7 @@ from .common import Check
 from .db_drift import check_migrations
 from .entities import check_entities
 from .openapi_drift import check_openapi
+from .reliability import check_reliability
 from .shared_fields import check_shared_fields
 from .traceability import check_traceability
 
@@ -18,6 +19,7 @@ ALL_CHECKS = (
     check_entities,
     check_shared_fields,
     check_traceability,
+    check_reliability,
 )
 
 
@@ -29,5 +31,5 @@ def run_all() -> tuple[bool, list[Check]]:
 __all__ = [
     "Check", "run_all", "ALL_CHECKS",
     "check_migrations", "check_openapi", "check_entities",
-    "check_shared_fields", "check_traceability",
+    "check_shared_fields", "check_traceability", "check_reliability",
 ]
