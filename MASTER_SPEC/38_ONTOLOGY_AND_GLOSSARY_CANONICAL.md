@@ -423,4 +423,4 @@ This document is the semantic foundation of the platform and **MUST** remain sta
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `39_EVENT_CONTRACT_AND_EVENT_DRIVEN_ARCHITECTURE.md`**
