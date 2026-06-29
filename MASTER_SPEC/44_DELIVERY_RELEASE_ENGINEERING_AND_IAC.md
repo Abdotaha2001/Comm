@@ -219,8 +219,8 @@ The truthful seed **exists**: a real CI pipeline that tests, scans, governs, and
 
 Canonical via Part 38 where applicable: **CI / CD** (continuous integration / delivery-deployment) · **IaC** (infrastructure-as-code) · **artifact / registry / image digest** · **SBOM / signing / provenance (SLSA)** · **build-once-promote** · **immutable infrastructure** · **drift detection** · **trunk-based / protected branch / CODEOWNERS** · **semver / changelog / release train** · **expand→migrate→contract** (zero-downtime migration) · **blue-green / canary / rolling / feature flag** (progressive delivery) · **kill-switch** · **rollback / forward-fix** · **DR / BCP / RTO / RPO** (Part 41) · **GitOps / reconciler / desired state** · **policy-as-code** (OPA/Sentinel) · **ephemeral / preview environment** · **12-factor config** · **DORA** (deploy frequency · lead time · change-failure rate · MTTR) · **freeze window / break-glass** (Part 41) · **build manifest** (deploy provenance, §C.6). These notations are used across Parts 13/34/37/41/42/43/44.
 
-This document is the authoritative delivery law for TT-OS; with the data model (37), ontology (38), event contract (39), reliability law (40), security law (41), operability law (42), and intelligence law (43), it completes the platform's build foundation — **structure, meaning, communication, honesty, trust, operability, intelligence, and delivery.**
+This document is the authoritative delivery law for TT-OS; with the data model (37), ontology (38), event contract (39), reliability law (40), security law (41), operability law (42), and intelligence law (43), it forms the ship-it core of the platform's build foundation — **structure, meaning, communication, honesty, trust, operability, intelligence, and delivery.** Part 45 adds the ninth pillar — **experience** (the human-facing client).
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `45_FRONTEND_AND_CLIENT_ARCHITECTURE.md`**
