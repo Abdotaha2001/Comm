@@ -92,7 +92,17 @@ def status_for(
 def compose(confidences: Iterable[float], mode: str = "chain") -> float:
     """Compose stage confidences. `chain` = product (independent stages),
     `required_all` = min (a single weak required component governs, §H.4).
-    Averaging is forbidden (§B.3) — any other mode raises."""
+    Averaging is forbidden (§B.3) — any other mode raises.
+
+    Independence caveat (§H.6): `chain` (product) assumes the stages fail
+    *independently*. For **positively correlated** inputs — e.g. the two endpoint
+    detections of one inter-frame displacement (same detector, adjacent frames,
+    near-identical conditions) — the product **under**-estimates the joint
+    confidence (it double-counts shared error), so it is a conservative lower
+    bound, not the true value. When the components are both *required* and
+    strongly correlated, `required_all` (min) is the better model: it is the exact
+    limit under perfect correlation and avoids the spurious independence penalty.
+    Reserve `chain` for genuinely independent pipeline stages."""
     cs = [clamp01(c) for c in confidences]
     if not cs:
         return 1.0
@@ -179,12 +189,22 @@ def build(
     )
 
 
-def abstain(reason: str, *, tier: Optional[str] = None, source: Optional[dict] = None) -> ReliabilityEnvelope:
-    """An explicit abstention (§F): value=null, status=abstain, reason recorded."""
+def abstain(
+    reason: str,
+    *,
+    tier: Optional[str] = None,
+    unit: Optional[str] = None,
+    calibrated: bool = True,
+    source: Optional[dict] = None,
+) -> ReliabilityEnvelope:
+    """An explicit abstention (§F): value=null, status=abstain, reason recorded.
+    `unit`/`calibrated` keep the envelope shape consistent with `build()` so an
+    abstained value is indistinguishable in schema from a reported one."""
     src = dict(source or {})
     src["abstain_reason"] = reason
     return ReliabilityEnvelope(
-        value=None, confidence=0.0, status=STATUS_ABSTAIN, tier=tier, source=src
+        value=None, confidence=0.0, status=STATUS_ABSTAIN, tier=tier,
+        unit=unit, calibrated=calibrated, source=src,
     )
 
 

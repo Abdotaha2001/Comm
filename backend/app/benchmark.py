@@ -58,6 +58,37 @@ def run_detector_benchmark(n_clips: int = 3, n_frames: int = 60) -> dict:
     }
 
 
+def detection_rate_samples(n_clips: int = 3, n_frames: int = 60) -> list[float]:
+    """Per-clip detection rates on the golden set — the empirical reference
+    distribution used to *fit* the detection-rate OOD gate (Part 40 §Y) instead of
+    hard-coding it. NOTE: the golden set is synthetic (an easy, near-1.0 distribution),
+    so the fitted reference is a placeholder until representative real footage is
+    registered; the OOD fit floors the std to avoid a degenerate gate."""
+    det = OpenCVBallDetector()
+    rates: list[float] = []
+    for _ in range(n_clips):
+        fd, path = tempfile.mkstemp(suffix=".avi")
+        os.close(fd)
+        try:
+            write_synthetic_video(path, n_frames=n_frames)
+            cap = cv2.VideoCapture(path)
+            total = detected = idx = 0
+            while True:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                total += 1
+                if det.detect(frame, idx) is not None:
+                    detected += 1
+                idx += 1
+            cap.release()
+            if total:
+                rates.append(detected / total)
+        finally:
+            os.remove(path)
+    return rates
+
+
 def run_scoreboard_benchmark(samples=((3, 1), (21, 19), (7, 2), (11, 9), (0, 0))) -> dict:
     correct = 0
     for p1, p2 in samples:

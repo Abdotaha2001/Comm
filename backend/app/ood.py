@@ -19,12 +19,16 @@ class OODGate:
         self.z = float(z)
 
     @classmethod
-    def fit(cls, samples: Sequence[float], z: float = 3.0) -> "OODGate":
+    def fit(cls, samples: Sequence[float], z: float = 3.0, min_std: float = 0.0) -> "OODGate":
+        """Fit the reference mean/std from samples. `min_std` floors the dispersion:
+        a too-clean reference (near-zero variance — e.g. synthetic golden clips) would
+        otherwise yield a hypersensitive gate that flags any deviation as OOD, so the
+        floor injects a prior on the minimum plausible spread (Part 40 §Y)."""
         if not samples:
             raise ValueError("OODGate.fit needs at least one reference sample")
         mean = statistics.fmean(samples)
         std = statistics.pstdev(samples) if len(samples) > 1 else 1e-9
-        return cls(mean, std or 1e-9, z)
+        return cls(mean, max(std or 1e-9, min_std), z)
 
     def score(self, x: float) -> float:
         """Standardized distance from the reference (|z|)."""

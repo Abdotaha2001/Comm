@@ -57,6 +57,23 @@ def test_abstain_helper_records_reason():
     assert env.source["abstain_reason"] == "occlusion"
 
 
+def test_abstain_keeps_envelope_shape():
+    # An abstained value must be schema-indistinguishable from a reported one (§F):
+    # same unit/calibrated fields so consumers don't special-case it.
+    env = rel.abstain("low SNR", tier="t1", unit="km/h", calibrated=False)
+    d = env.to_dict()
+    assert d["value"] is None and d["status"] == "abstain"
+    assert d["unit"] == "km/h" and d["calibrated"] is False
+
+
+def test_required_all_beats_product_for_correlated_inputs():
+    # Two correlated, both-required endpoints: min (required_all) must not double-count
+    # shared error the way an independence-assuming product does (§H.6).
+    assert rel.compose([0.8, 0.8], "required_all") == 0.8
+    assert rel.compose([0.8, 0.8], "chain") == pytest.approx(0.64)
+    assert rel.compose([0.8, 0.8], "required_all") > rel.compose([0.8, 0.8], "chain")
+
+
 def test_decide_is_selective():
     assert rel.decide(0.6) is True
     assert rel.decide(0.3) is False

@@ -175,6 +175,41 @@ def test_outputs_carry_reliability_envelope(client, coach_headers):
         assert sp["status"] in ("preliminary", "abstain")
 
 
+def _shot(*, snr_significant, speed=70.0, ci=8.0, conf=0.8, snr=5.0):
+    return {
+        "speed_kmh": speed, "speed_ci": ci, "confidence": conf,
+        "provenance": {
+            "speed_inputs_conf": [conf, conf],
+            "speed_uncertainty": {"snr": snr, "significant": snr_significant},
+        },
+    }
+
+
+def test_low_snr_speed_abstains_regardless_of_confidence():
+    # High detection confidence but an insignificant displacement (SNR below the gate):
+    # the speed envelope MUST abstain (Part 40 §BH) — value null, no fabricated number.
+    from app.worker import _speed_envelope
+
+    env = _speed_envelope(_shot(snr_significant=False, snr=1.2), "t1", "opencv")
+    d = env.to_dict()
+    assert d["status"] == "abstain" and d["value"] is None
+    assert d["unit"] == "km/h" and d["calibrated"] is False
+    assert d["source"]["snr"] == 1.2 and d["source"]["measure"] == "speed"
+
+
+def test_significant_speed_composes_endpoints_by_min():
+    # A significant measurement reports a value; the two correlated, both-required
+    # endpoint detections compose by required_all (min), not an independence product.
+    from app.worker import _speed_envelope
+
+    env = _speed_envelope(_shot(snr_significant=True, conf=0.8), "t1", "opencv")
+    d = env.to_dict()
+    assert d["status"] in ("preliminary", "abstain")  # uncalibrated/tier-capped
+    assert d["source"]["composition"] == "required_all"
+    # T1 cap (0.6) and the uncalibrated cap (0.7) both bound the confidence.
+    assert d["confidence"] <= 0.6
+
+
 def test_analyze_requires_coach(client, player_headers):
     # players can't upload/analyze (RBAC)
     r = client.post("/v1/videos/nope/analyze", headers=player_headers)

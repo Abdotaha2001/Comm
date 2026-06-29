@@ -99,8 +99,23 @@ def check_reliability() -> Check:
         h3 = unc.speed_uncertainty(60.0, 20.0, tier="t3")[0]
         if not (h1 > h3 > 0):
             chk.fail("speed uncertainty must be positive and T1 > T3 (§AP/§BH)")
+
+        # §BH — the SNR significance gate: a tiny displacement (SNR < SNR_MIN) is
+        # NOT significant (caller must abstain); a large one is. Tied to the
+        # measurement's own SNR, not to detection confidence.
+        lo = unc.speed_uncertainty(60.0, 1.0, tier="t1", sigma_px=2.0)[1]
+        hi = unc.speed_uncertainty(60.0, 60.0, tier="t1", sigma_px=2.0)[1]
+        if lo.get("significant") is not False or hi.get("significant") is not True:
+            chk.fail("speed SNR significance gate misbehaves (§BH)")
+        if not (getattr(unc, "SNR_MIN", 0) >= 1.0):
+            chk.fail("uncertainty.SNR_MIN must be a sane (>=1) threshold (§BH)")
     except Exception as exc:  # noqa: BLE001
         chk.fail(f"uncertainty module error: {exc}")
+
+    # §H.6 — correlated required components compose by min, never by an
+    # independence-assuming product that double-counts shared error.
+    if rel.compose([0.8, 0.8], "required_all") != 0.8:
+        chk.fail("required_all of correlated endpoints must be the minimum (§H.6)")
 
     chk.info["engine"] = "ok"
     return chk

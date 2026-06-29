@@ -45,3 +45,30 @@ def test_localization_sigma_is_data_driven():
 
 def test_localization_sigma_needs_enough_points():
     assert unc.localization_sigma_from_track([(0, 0, 0), (1, 1, 1)]) is None
+
+
+def test_snr_significance_gate():
+    # SNR = ||Δp|| / (√2·σ_px). A tiny displacement vs the localisation noise is NOT
+    # significant (GUM linearisation invalid + Rician bias) -> the caller must abstain.
+    small = unc.speed_uncertainty(60.0, 1.0, tier="t1", sigma_px=2.0)[1]
+    big = unc.speed_uncertainty(60.0, 60.0, tier="t1", sigma_px=2.0)[1]
+    assert small["significant"] is False and small["snr"] < unc.SNR_MIN
+    assert big["significant"] is True and big["snr"] >= unc.SNR_MIN
+    # snr is the reciprocal of the relative localisation term (both 2-dp rounded).
+    assert small["snr"] == pytest.approx(1.0 / small["rel_disp"], abs=0.01)
+
+
+def test_snr_boundary_is_snr_min():
+    # At ||Δp|| = SNR_MIN·√2·σ_px the measurement sits exactly on the threshold.
+    sigma = 2.0
+    disp = unc.SNR_MIN * (2 ** 0.5) * sigma
+    comps = unc.speed_uncertainty(60.0, disp, tier="t1", sigma_px=sigma)[1]
+    assert comps["snr"] == pytest.approx(unc.SNR_MIN, rel=1e-6)
+    assert comps["significant"] is True  # >= is significant
+
+
+def test_rel_scale_override():
+    # A measured calibration residual can override the per-tier default scale term.
+    base = unc.speed_uncertainty(60.0, 20.0, tier="t1")[1]["rel_scale"]
+    over = unc.speed_uncertainty(60.0, 20.0, tier="t1", rel_scale=0.02)[1]["rel_scale"]
+    assert over == 0.02 and over < base

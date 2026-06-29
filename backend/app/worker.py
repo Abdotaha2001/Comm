@@ -4,21 +4,72 @@ Scaffold runs this inline from the API (synthetic clips are fast). Production
 moves it to a queue + GPU workers (Celery/RQ) — same `analyze_run` core, just a
 different trigger. The CV detector is pluggable (MASTER_SPEC Part 26).
 """
+import functools
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from . import ood, reliability
+from . import ood, reliability, uncertainty
 from .cv.pipeline import analyze_video
 from .models import AnalysisRun, Event, Match, Rally, Shot, Video
 
-# Reference detection-rate distribution (golden-set baseline) for an OOD / domain-
-# shift signal (Part 40 §Y): a run far below this is novel/degraded.
-_DETRATE_OOD = ood.OODGate(mean=0.9, std=0.1, z=3.0)
+# Documented prior for the detection-rate OOD / domain-shift gate (Part 40 §Y): a
+# representative operating distribution centred a little below the (synthetic) golden
+# set, used as the fallback until a real reference is fit.
+_DETRATE_OOD_PRIOR = ood.OODGate(mean=0.9, std=0.1, z=3.0)
+
+
+@functools.lru_cache(maxsize=1)
+def _detrate_ood() -> ood.OODGate:
+    """Detection-rate OOD reference (Part 40 §Y), *fit from the golden set* rather than
+    hard-coded — measured once per process and cached. The std is floored (the synthetic
+    golden set is too clean to estimate dispersion), and any failure falls back to the
+    documented prior so reference-fitting can never break analysis."""
+    try:
+        from .benchmark import detection_rate_samples
+
+        samples = detection_rate_samples()
+        if len(samples) >= 2:
+            return ood.OODGate.fit(samples, z=3.0, min_std=0.1)
+    except Exception:  # noqa: BLE001 — never let reference-fitting break analysis
+        pass
+    return _DETRATE_OOD_PRIOR
 
 
 def _now():
     return datetime.now(timezone.utc)
+
+
+def _speed_envelope(shot: dict, tier: str | None, detector: str) -> reliability.ReliabilityEnvelope:
+    """Per-shot speed reliability envelope (Part 40 §C/§K/§BH).
+
+    Abstains — regardless of detection confidence — when the speed is undefined or the
+    measurement SNR is below ``uncertainty.SNR_MIN`` (displacement not significant vs
+    localisation noise: GUM linearisation invalid + ||Δp|| Rician-biased, §BH). Otherwise
+    composes the two endpoint detections with `required_all` (min), not an
+    independence-assuming product: they are both required and positively correlated
+    (adjacent frames), so min is the appropriate, non-double-counting model (§H.6)."""
+    prov = shot.get("provenance") or {}
+    unc = prov.get("speed_uncertainty") or {}
+    speed, ci = shot["speed_kmh"], shot["speed_ci"]
+    if not speed or unc.get("significant") is False:
+        return reliability.abstain(
+            reason=(f"speed measurement SNR {unc.get('snr')} < {uncertainty.SNR_MIN}: "
+                    "displacement not significant vs localisation noise (Part 40 §BH)"),
+            tier=tier, unit="km/h", calibrated=False,
+            source={"model": detector, "measure": "speed",
+                    "snr": unc.get("snr"), "snr_min": uncertainty.SNR_MIN},
+        )
+    inputs = prov.get("speed_inputs_conf") or [shot["confidence"] or 0.0]
+    speed_conf = reliability.compose(inputs, "required_all")
+    return reliability.build(
+        value=speed, confidence=speed_conf, tier=tier,
+        ci=([round(speed - ci, 1), round(speed + ci, 1)] if ci else None),
+        unit="km/h", calibrated=False,
+        abstain_threshold=reliability.threshold_for("speed"),
+        source={"model": detector, "measure": "speed", "ci_method": "gum_k2",
+                "composition": "required_all", "composed_from": inputs},
+    )
 
 
 def _derive_capture_kpis(result: dict) -> dict:
@@ -130,21 +181,8 @@ def analyze_run(
                 # Per-value reliability envelopes (Part 40 §C/§K), tier-capped.
                 # Speed + spin on the classical baseline are uncalibrated/markerless
                 # → flagged + capped to "preliminary"; below threshold → abstain.
-                speed, ci = s["speed_kmh"], s["speed_ci"]
-                # Speed confidence composes the endpoint detections it used
-                # (independent chain → product, §H — never an average).
-                inputs = (s.get("provenance") or {}).get("speed_inputs_conf") or [s["confidence"] or 0.0]
-                speed_conf = reliability.compose(inputs, "chain")
-                speed_env = reliability.build(
-                    value=speed, confidence=speed_conf,
-                    tier=video.capture_tier,
-                    ci=([round(speed - ci, 1), round(speed + ci, 1)]
-                        if speed is not None and ci else None),
-                    unit="km/h", calibrated=False,
-                    abstain_threshold=reliability.threshold_for("speed"),
-                    source={"model": result["detector"], "measure": "speed",
-                            "ci_method": "gum_k2", "composed_from": inputs},
-                )
+                # Speed abstains on low measurement SNR too, not just low confidence (§BH).
+                speed_env = _speed_envelope(s, video.capture_tier, result["detector"])
                 spin_conf = (s.get("provenance") or {}).get("spin_confidence") or 0.0
                 spin_env = reliability.build(
                     value=s["spin_type"], confidence=spin_conf,
@@ -179,11 +217,12 @@ def analyze_run(
             "reliability": reliability.summarize(
                 result["reliability_index"], tier=video.capture_tier, calibrated=False
             ),
-            # OOD / domain-shift signal vs the golden-set detection-rate baseline (§Y).
+            # OOD / domain-shift signal vs the golden-set detection-rate reference (§Y),
+            # fit from data (cached) rather than hard-coded.
             "ood": {
-                "signal": "detection_rate", **_DETRATE_OOD.to_dict(),
-                "score": round(_DETRATE_OOD.score(result["detection_rate"]), 2),
-                "is_ood": _DETRATE_OOD.is_ood(result["detection_rate"]),
+                "signal": "detection_rate", **_detrate_ood().to_dict(),
+                "score": round(_detrate_ood().score(result["detection_rate"]), 2),
+                "is_ood": _detrate_ood().is_ood(result["detection_rate"]),
             },
         }
         run.model_versions = {"ball_detector": result["detector"]}
