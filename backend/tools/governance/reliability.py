@@ -90,5 +90,17 @@ def check_reliability() -> Check:
     except Exception as exc:  # noqa: BLE001
         chk.fail(f"ood module error: {exc}")
 
+    # §AP/§BH — propagated speed interval is positive and tier-ordered (T1 > T3);
+    # the fabricated ±30% interval is gone.
+    try:
+        from app import uncertainty as unc
+
+        h1 = unc.speed_uncertainty(60.0, 20.0, tier="t1")[0]
+        h3 = unc.speed_uncertainty(60.0, 20.0, tier="t3")[0]
+        if not (h1 > h3 > 0):
+            chk.fail("speed uncertainty must be positive and T1 > T3 (§AP/§BH)")
+    except Exception as exc:  # noqa: BLE001
+        chk.fail(f"uncertainty module error: {exc}")
+
     chk.info["engine"] = "ok"
     return chk

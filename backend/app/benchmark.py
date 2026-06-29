@@ -130,7 +130,34 @@ def run_calibration_benchmark(n_clips: int = 3, n_frames: int = 60, tol_px: floa
     return report
 
 
+def calibration_record(n_clips: int = 3, n_frames: int = 60) -> dict:
+    """A model-card reliability record for the baseline detector (Part 40 §G.1/§BE).
+
+    Packages the golden-set calibration metrics + the fitted temperature with
+    provenance metadata. The classical baseline stays `calibrated=false` (§G.6);
+    a trained model would promote only after passing the ECE gate (§G.4).
+    """
+    from datetime import datetime, timezone
+
+    rep = run_calibration_benchmark(n_clips=n_clips, n_frames=n_frames)
+    return {
+        "schema": "reliability_model_card_v1",
+        "model": rep.get("detector"),
+        "calibrated": False,
+        "method": "temperature_scaling",
+        "dataset": "golden_synthetic",
+        "metrics": {
+            k: rep.get(k) for k in (
+                "ece", "mce", "brier", "temperature",
+                "ece_after_temperature", "localization_picp", "n",
+            )
+        },
+        "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
 if __name__ == "__main__":
     print("detector   :", run_detector_benchmark())
     print("scoreboard :", run_scoreboard_benchmark())
     print("calibration:", run_calibration_benchmark())
+    print("model_card :", calibration_record())

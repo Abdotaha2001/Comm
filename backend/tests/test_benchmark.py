@@ -1,5 +1,6 @@
 """Golden-set regression gate — accuracy must not silently drop (Part 10.18)."""
 from app.benchmark import (
+    calibration_record,
     run_calibration_benchmark,
     run_detector_benchmark,
     run_scoreboard_benchmark,
@@ -27,3 +28,11 @@ def test_calibration_benchmark_reports_and_temperature_helps():
     # so calibration must never get worse on the golden set.
     assert m["calibration_improved"] is True, m
     assert m["nll_after"] <= m["nll_before"] + 1e-9, m
+
+
+def test_calibration_record_is_a_model_card():
+    rec = calibration_record(n_clips=2, n_frames=50)
+    for k in ("schema", "model", "calibrated", "method", "metrics", "created_at"):
+        assert k in rec, rec
+    assert rec["calibrated"] is False  # classical baseline (§G.6)
+    assert rec["metrics"]["ece"] is not None

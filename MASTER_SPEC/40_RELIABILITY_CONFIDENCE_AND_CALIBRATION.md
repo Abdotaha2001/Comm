@@ -210,7 +210,9 @@ The following **MUST NOT** occur and **SHOULD** be lint/CI-detectable (§T):
 | Conformal prediction | `backend/app/conformal.py` | distribution-free intervals + coverage (§X) | ✅ |
 | OOD / novelty gate | `backend/app/ood.py` | standardized-distance novelty gate (§Y) | ✅ |
 | Per-domain abstain thresholds | `reliability.DOMAIN_THRESHOLDS` + `threshold_for` | config thresholds, no magic numbers (§K) | ✅ |
-| Envelopes on pipeline outputs | `worker.py` (shots: speed+spin · events · run) + `analytics/profile.py` (profile) | every measured value carries an envelope (§C) | ✅ |
+| Envelopes on pipeline outputs | `worker.py` (shots: speed+spin · events · run · scoreboard · OOD) + `analytics/profile.py` (profile) | every measured value carries an envelope (§C); speed confidence composes endpoint detections (§H); scoreboard consensus thresholded (§K); detection-rate OOD signal (§Y) | ✅ |
+| Measurement uncertainty (GUM) | `backend/app/uncertainty.py` | first-order propagated speed interval — replaces the fabricated ±30% (§AP/§BH/§AM) | ✅ |
+| Calibration model card | `benchmark.calibration_record` | per-model reliability record (§G.1/§BE) | ✅ |
 
 `reliability.py` exposes the envelope constructor, the status mapper (§E), `compose` (§H, product/min — never average), the tier cap (§I, reusing the Part-35 certification ceilings), and the abstain decision (§F); producers **MUST** route measured outputs through it. The CI gate `check_reliability` (governance job) enforces these invariants on every push.
 

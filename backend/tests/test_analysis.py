@@ -51,6 +51,9 @@ def test_upload_analyze_get_match(client, coach_headers):
     assert body["reliability_index"] is not None
     # No capture report supplied -> capture certification is not asserted.
     assert body["capture_certification"] is None
+    # Run carries an OOD / domain-shift signal (Part 40 §Y).
+    assert body["input_quality"]["ood"]["signal"] == "detection_rate"
+    assert "is_ood" in body["input_quality"]["ood"]
     mid = body["match_id"]
     assert mid
 

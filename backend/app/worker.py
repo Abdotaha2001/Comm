@@ -8,9 +8,13 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from . import reliability
+from . import ood, reliability
 from .cv.pipeline import analyze_video
 from .models import AnalysisRun, Event, Match, Rally, Shot, Video
+
+# Reference detection-rate distribution (golden-set baseline) for an OOD / domain-
+# shift signal (Part 40 §Y): a run far below this is novel/degraded.
+_DETRATE_OOD = ood.OODGate(mean=0.9, std=0.1, z=3.0)
 
 
 def _now():
@@ -89,11 +93,20 @@ def analyze_run(
     try:
         result = analyze_video(video.storage_key)
 
+        # Scoreboard reliability (§K): the OCR consensus is the confidence; below
+        # the scoreboard threshold (0.9) the read abstains.
+        score = result.get("score") or {}
+        if score:
+            score["reliability"] = reliability.summarize(
+                score.get("consensus", 0.0), tier=video.capture_tier, calibrated=True
+            )
+            if score.get("consensus", 0.0) < reliability.threshold_for("scoreboard"):
+                score["reliability"]["status"] = reliability.STATUS_ABSTAIN
         match = Match(
             analysis_run_id=run.id,
             video_id=video.id,
             player1_id=video.player_id,
-            score=result.get("score") or {},
+            score=score,
         )
         db.add(match)
         db.flush()
@@ -118,14 +131,19 @@ def analyze_run(
                 # Speed + spin on the classical baseline are uncalibrated/markerless
                 # → flagged + capped to "preliminary"; below threshold → abstain.
                 speed, ci = s["speed_kmh"], s["speed_ci"]
+                # Speed confidence composes the endpoint detections it used
+                # (independent chain → product, §H — never an average).
+                inputs = (s.get("provenance") or {}).get("speed_inputs_conf") or [s["confidence"] or 0.0]
+                speed_conf = reliability.compose(inputs, "chain")
                 speed_env = reliability.build(
-                    value=speed, confidence=s["confidence"] or 0.0,
+                    value=speed, confidence=speed_conf,
                     tier=video.capture_tier,
                     ci=([round(speed - ci, 1), round(speed + ci, 1)]
-                        if speed is not None and ci is not None else None),
+                        if speed is not None and ci else None),
                     unit="km/h", calibrated=False,
                     abstain_threshold=reliability.threshold_for("speed"),
-                    source={"model": result["detector"], "measure": "speed"},
+                    source={"model": result["detector"], "measure": "speed",
+                            "ci_method": "gum_k2", "composed_from": inputs},
                 )
                 spin_conf = (s.get("provenance") or {}).get("spin_confidence") or 0.0
                 spin_env = reliability.build(
@@ -161,6 +179,12 @@ def analyze_run(
             "reliability": reliability.summarize(
                 result["reliability_index"], tier=video.capture_tier, calibrated=False
             ),
+            # OOD / domain-shift signal vs the golden-set detection-rate baseline (§Y).
+            "ood": {
+                "signal": "detection_rate", **_DETRATE_OOD.to_dict(),
+                "score": round(_DETRATE_OOD.score(result["detection_rate"]), 2),
+                "is_ood": _DETRATE_OOD.is_ood(result["detection_rate"]),
+            },
         }
         run.model_versions = {"ball_detector": result["detector"]}
 

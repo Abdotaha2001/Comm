@@ -9,6 +9,7 @@ from typing import Optional
 
 import cv2
 
+from .. import uncertainty
 from .detector import BallDetector
 from .opencv_detector import OpenCVBallDetector
 from .scoreboard import read_scoreboard
@@ -86,7 +87,7 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
             "provenance": {"source": det.name, "tier": "t1", "signals": ["rally_start"]},
         })
         for i in range(1, len(seg) - 1):
-            f0, x0, y0, _, _ = seg[i - 1]
+            f0, x0, y0, _, c0 = seg[i - 1]
             f1, x1, y1, _, c1 = seg[i]
             f2, x2, y2, _, _ = seg[i + 1]
             if (f1 - f0) != 1 or (f2 - f1) != 1:
@@ -103,15 +104,19 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
                 })
             # Shot/hit: horizontal reversal
             if vx0 != 0 and vx1 != 0 and (vx0 > 0) != (vx1 > 0):
-                speed_px = ((vx0 ** 2 + vy0 ** 2) ** 0.5) * fps
-                speed_kmh = round((speed_px / px_per_m) * 3.6, 1) if px_per_m else 0.0
+                disp_px = (vx0 ** 2 + vy0 ** 2) ** 0.5
+                speed_kmh = round((disp_px * fps / px_per_m) * 3.6, 1) if px_per_m else 0.0
+                # Propagated interval (GUM first-order) — replaces the old ±30%.
+                speed_ci, unc = uncertainty.speed_uncertainty(speed_kmh, disp_px, tier="t1", k=2.0)
                 shots.append({
                     "idx": shot_idx, "frame": f1, "ts_ms": _ms(f1, fps),
                     "stroke_type": "drive", "spin_type": None, "wing": wing,
-                    "speed_kmh": speed_kmh, "speed_ci": round(speed_kmh * 0.3, 1),
+                    "speed_kmh": speed_kmh, "speed_ci": speed_ci,
                     "quality": None, "confidence": round(c1, 3),
                     "provenance": {"source": det.name, "tier": "t1",
-                                   "signals": ["vx_reversal"], "speed_calibrated": False},
+                                   "signals": ["vx_reversal"], "speed_calibrated": False,
+                                   "speed_inputs_conf": [round(c0, 3), round(c1, 3)],
+                                   "speed_uncertainty": unc},
                 })
                 shot_idx += 1
                 wing = "bh" if wing == "fh" else "fh"
