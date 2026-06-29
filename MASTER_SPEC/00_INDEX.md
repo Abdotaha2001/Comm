@@ -55,6 +55,7 @@ Read the files **in order**. Each part ends with a `➡️ NEXT FILE:` pointer. 
 | 37 | `37_DATA_MODEL_AND_API_CONTRACT_BUILD_SPEC.md` | 🔧 Authoritative backend build spec: domain model · schema · API/event contracts · traceability · governance (RFC-style; supersedes Part 27 for build) |
 | 38 | `38_ONTOLOGY_AND_GLOSSARY_CANONICAL.md` | 🔧 Authoritative ontology & controlled vocabulary: canonical_ids · entity/event/stroke/spin/pose/equipment/AI ontologies · KG relationships · EN↔AR glossary (184 terms; supersedes Part 28 for semantics; SoT `i18n/glossary.json`) |
 | 39 | `39_EVENT_CONTRACT_AND_EVENT_DRIVEN_ARCHITECTURE.md` | 🔧 Authoritative event contract: canonical envelope · full event catalog · transactional outbox · delivery/ordering/idempotency · webhooks · audit/officiating integrity · governance (third build pillar after 37/38) |
+| 40 | `40_RELIABILITY_CONFIDENCE_AND_CALIBRATION.md` | 🔧 Authoritative reliability law: reliability envelope · calibrated-confidence semantics · abstention policy · uncertainty propagation (no averaging) · capture-tier cap · calibration (ECE/PICP) gates · governance (formalizes Part 10) |
 
 ---
 

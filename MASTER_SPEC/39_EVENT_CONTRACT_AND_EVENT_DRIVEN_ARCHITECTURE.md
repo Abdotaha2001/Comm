@@ -836,4 +836,4 @@ This document is the authoritative event contract for TT-OS; the data model (Par
 
 ---
 
-➡️ **NEXT FILE: `00_INDEX.md`** *(loop back — the spec is a living reference)*
+➡️ **NEXT FILE: `40_RELIABILITY_CONFIDENCE_AND_CALIBRATION.md`**
