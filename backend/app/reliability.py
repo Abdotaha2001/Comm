@@ -37,6 +37,24 @@ STATUS_ABSTAIN = "abstain"
 #     the Part-35 schema and are reused via apply_cap(certification=...). -------- #
 TIER_CEILING = {"T1": 0.6, "T2": 0.75, "T3": 0.9, "T3_OFFICIATING": 1.0}
 
+# --- Per-domain abstain thresholds (Part 40 §K/§AB; config, not magic numbers).
+#     A domain whose confidence falls below its threshold MUST abstain. -------- #
+DOMAIN_THRESHOLDS = {
+    "ball_detection": 0.50,
+    "speed": 0.50,
+    "spin": 0.50,
+    "stroke": 0.50,
+    "event": 0.50,
+    "scoreboard": 0.90,   # an OCR digit below 0.9 abstains the read (§K)
+    "profile_stat": 0.50,
+    "officiating": 0.95,  # decisive calls require near-certainty (§K/§BM)
+}
+
+
+def threshold_for(domain: str) -> float:
+    """The abstain threshold for a measurement domain (§K). Unknown → default."""
+    return DOMAIN_THRESHOLDS.get(domain, DEFAULT_ABSTAIN)
+
 
 def clamp01(x: float) -> float:
     x = float(x)

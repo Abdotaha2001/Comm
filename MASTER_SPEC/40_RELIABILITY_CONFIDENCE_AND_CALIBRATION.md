@@ -207,7 +207,10 @@ The following **MUST NOT** occur and **SHOULD** be lint/CI-detectable (§T):
 | Calibration metrics + calibrators + gate | `backend/app/calibration.py` | ECE/MCE/Brier/PICP · temperature scaling · `passes_gate` (§G.4) | ✅ |
 | Reliability CI gate | `backend/tools/governance/reliability.py` (`check_reliability`) | enforces no-averaging, bands, caps, calibration gate in CI | ✅ |
 | Calibration metrics in the golden report | `backend/app/benchmark.py` (`run_calibration_benchmark`) | ECE/MCE/Brier + PICP on the golden set; temperature-scaling improvement (Part 29) | ✅ |
-| Thresholds config | settings / per-model config | abstain thresholds (no magic numbers) | 🟡 |
+| Conformal prediction | `backend/app/conformal.py` | distribution-free intervals + coverage (§X) | ✅ |
+| OOD / novelty gate | `backend/app/ood.py` | standardized-distance novelty gate (§Y) | ✅ |
+| Per-domain abstain thresholds | `reliability.DOMAIN_THRESHOLDS` + `threshold_for` | config thresholds, no magic numbers (§K) | ✅ |
+| Envelopes on pipeline outputs | `worker.py` (shots: speed+spin · events · run) + `analytics/profile.py` (profile) | every measured value carries an envelope (§C) | ✅ |
 
 `reliability.py` exposes the envelope constructor, the status mapper (§E), `compose` (§H, product/min — never average), the tier cap (§I, reusing the Part-35 certification ceilings), and the abstain decision (§F); producers **MUST** route measured outputs through it. The CI gate `check_reliability` (governance job) enforces these invariants on every push.
 

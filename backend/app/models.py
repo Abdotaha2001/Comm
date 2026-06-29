@@ -182,6 +182,7 @@ class Shot(Base):
     quality = Column(Float)
     confidence = Column(Float)
     provenance = Column(JSON)
+    reliability = Column(JSON)  # per-value reliability envelope (Part 40 §C)
 
 
 class Event(Base):

@@ -114,18 +114,43 @@ def analyze_run(
             db.add(rally)
             db.flush()
             for s in r["shots"]:
+                # Per-value reliability envelopes (Part 40 §C/§K), tier-capped.
+                # Speed + spin on the classical baseline are uncalibrated/markerless
+                # → flagged + capped to "preliminary"; below threshold → abstain.
+                speed, ci = s["speed_kmh"], s["speed_ci"]
+                speed_env = reliability.build(
+                    value=speed, confidence=s["confidence"] or 0.0,
+                    tier=video.capture_tier,
+                    ci=([round(speed - ci, 1), round(speed + ci, 1)]
+                        if speed is not None and ci is not None else None),
+                    unit="km/h", calibrated=False,
+                    abstain_threshold=reliability.threshold_for("speed"),
+                    source={"model": result["detector"], "measure": "speed"},
+                )
+                spin_conf = (s.get("provenance") or {}).get("spin_confidence") or 0.0
+                spin_env = reliability.build(
+                    value=s["spin_type"], confidence=spin_conf,
+                    tier=video.capture_tier, calibrated=False,
+                    abstain_threshold=reliability.threshold_for("spin"),
+                    source={"model": result["detector"], "measure": "spin", "markerless": True},
+                )
                 db.add(Shot(
                     rally_id=rally.id, idx=s["idx"], frame=s["frame"], ts_ms=s["ts_ms"],
                     stroke_type=s["stroke_type"], spin_type=s["spin_type"], wing=s["wing"],
                     speed_kmh=s["speed_kmh"], speed_ci=s["speed_ci"],
                     quality=s["quality"], confidence=s["confidence"],
                     provenance=s["provenance"],
+                    reliability={"speed": speed_env.to_dict(), "spin": spin_env.to_dict()},
                 ))
             for e in r["events"]:
+                prov = dict(e["provenance"] or {})
+                prov["reliability"] = reliability.summarize(
+                    e["confidence"] or 0.0, tier=video.capture_tier, calibrated=False
+                )
                 db.add(Event(
                     rally_id=rally.id, match_id=match.id, type=e["type"],
                     frame=e["frame"], ts_ms=e["ts_ms"], position=e.get("position"),
-                    confidence=e["confidence"], provenance=e["provenance"],
+                    confidence=e["confidence"], provenance=prov,
                 ))
 
         run.reliability_index = result["reliability_index"]

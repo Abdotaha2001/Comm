@@ -6,6 +6,7 @@ shots. Confidence is capped accordingly and scales with sample size (Part 10).
 """
 from collections import Counter
 
+from .. import reliability
 from ..models import Match, Rally, Shot, Video
 
 ATTACK = {"drive", "loop", "hook_loop", "fade_loop", "counterloop", "smash", "flick", "banana_flick"}
@@ -98,6 +99,11 @@ def aggregate_profile(db, org_id: str, player_id: str) -> dict:
     }
     confidence = round(min(1.0, n / (MIN_SAMPLE * 3)) * 0.6, 3)  # baseline cap 0.6
     note = "Preliminary — limited data." if n < MIN_SAMPLE else f"{n} shots aggregated."
+    # Derived-artifact reliability (Part 40 §AE/§AF): bounded by sample size; the
+    # baseline is uncalibrated so the status caps at "preliminary".
+    rel = reliability.summarize(confidence, calibrated=False)
+    rel["n_shots"] = n
+    stats["reliability"] = rel
     return {
         "style_class": _style(stats),
         "aggregated_stats": stats,

@@ -134,6 +134,7 @@ class EventRead(BaseModel):
     side: Optional[str] = None
     position: Optional[dict] = None
     confidence: Optional[float] = None
+    provenance: Optional[dict] = None  # carries the event's reliability (Part 40 §C)
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -148,6 +149,7 @@ class ShotRead(BaseModel):
     speed_ci: Optional[float] = None
     confidence: Optional[float] = None
     provenance: Optional[dict] = None
+    reliability: Optional[dict] = None  # per-value envelope (Part 40 §C)
     model_config = ConfigDict(from_attributes=True)
 
 

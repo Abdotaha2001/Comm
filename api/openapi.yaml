@@ -547,6 +547,10 @@ components:
         speed:
           $ref: '#/components/schemas/ReliabilityEnvelope'
         confidence: { type: number, minimum: 0, maximum: 1 }
+        reliability:
+          type: object
+          additionalProperties: true
+          description: keyed per-value envelopes (speed, spin) — Part 40 §C.
 
     Event:
       type: object
@@ -556,6 +560,10 @@ components:
         side: { type: string }
         position: { type: object, additionalProperties: true }
         confidence: { type: number, minimum: 0, maximum: 1 }
+        provenance:
+          type: object
+          additionalProperties: true
+          description: includes the event's reliability summary — Part 40 §C.
 
     PlayerProfile:
       type: object

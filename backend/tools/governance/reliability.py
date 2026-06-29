@@ -59,5 +59,36 @@ def check_reliability() -> Check:
     if cal.passes_gate([0.99] * 100, [True] * 50 + [False] * 50):
         chk.fail("passes_gate: an overconfident set must fail (§G.4)")
 
+    # §K — per-domain abstain thresholds are config (scoreboard stricter than speed).
+    if not callable(getattr(rel, "threshold_for", None)):
+        chk.fail("reliability.threshold_for missing (§K)")
+    elif rel.threshold_for("scoreboard") <= rel.threshold_for("speed"):
+        chk.fail("scoreboard abstain threshold must be stricter than speed (§K)")
+
+    # §X — conformal intervals meet their target coverage.
+    try:
+        import random
+
+        from app import conformal
+
+        random.seed(1)
+        cal_res = [random.gauss(0, 1) for _ in range(400)]
+        q = conformal.fit_quantile(cal_res, alpha=0.1)
+        test = [random.gauss(0, 1) for _ in range(2000)]
+        if conformal.coverage(test, [-q] * len(test), [q] * len(test)) < 0.85:
+            chk.fail("conformal interval fails target coverage (§X)")
+    except Exception as exc:  # noqa: BLE001
+        chk.fail(f"conformal module error: {exc}")
+
+    # §Y — the OOD gate discriminates novel inputs.
+    try:
+        from app import ood
+
+        g = ood.OODGate.fit([10, 10.1, 9.9, 10.0, 9.95], z=3.0)
+        if g.is_ood(10.0) or not g.is_ood(50.0):
+            chk.fail("OOD gate misbehaves (§Y)")
+    except Exception as exc:  # noqa: BLE001
+        chk.fail(f"ood module error: {exc}")
+
     chk.info["engine"] = "ok"
     return chk

@@ -140,6 +140,38 @@ def test_failed_capture_caps_analysis_reliability(client, coach_headers):
     assert run["input_quality"]["reliability_status"] == "abstain"
 
 
+def test_outputs_carry_reliability_envelope(client, coach_headers):
+    pid = client.post(
+        "/v1/players", headers=coach_headers, json={"full_name": "P"}
+    ).json()["id"]
+    vid = client.post(
+        f"/v1/players/{pid}/videos",
+        headers=coach_headers,
+        files={"file": ("ball.avi", _synth_to_bytes(), "video/avi")},
+    ).json()["id"]
+    mid = client.post(f"/v1/videos/{vid}/analyze", headers=coach_headers).json()["match_id"]
+
+    match = client.get(f"/v1/matches/{mid}", headers=coach_headers).json()
+    rallies = match["rallies"]
+
+    # Events are reliably produced and each carries a tier-capped reliability status.
+    events = [e for r in rallies for e in r["events"]]
+    assert events, "synthetic analysis should produce events"
+    er = events[0]["provenance"]["reliability"]
+    for k in ("confidence", "status", "tier", "calibrated"):
+        assert k in er, er
+    assert er["calibrated"] is False and er["tier"] == "t1" and er["confidence"] <= 0.6
+
+    # Shots aren't guaranteed by every synthetic clip; when present they carry
+    # keyed speed + spin envelopes (Part 40 §C/§K).
+    for sh in (s for r in rallies for s in r["shots"]):
+        rel = sh["reliability"]
+        assert rel and "speed" in rel and "spin" in rel, rel
+        sp = rel["speed"]
+        assert sp["calibrated"] is False and sp["tier"] == "t1" and sp["confidence"] <= 0.6
+        assert sp["status"] in ("preliminary", "abstain")
+
+
 def test_analyze_requires_coach(client, player_headers):
     # players can't upload/analyze (RBAC)
     r = client.post("/v1/videos/nope/analyze", headers=player_headers)
