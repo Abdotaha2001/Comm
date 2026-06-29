@@ -241,6 +241,122 @@ Conforms **iff**:
 | abstain | analysis_run | abstained | `abstain` | 10 |
 | provenance | provenance_records | (all) | `provenance` | 34.AK |
 
+---
+
+## W. Aleatoric vs Epistemic Uncertainty
+
+- Confidence **MUST** distinguish **aleatoric** uncertainty (irreducible input noise — occlusion, motion blur, low light) from **epistemic** uncertainty (model ignorance — OOD inputs, thin data).
+- More data/training reduces **epistemic** only; **aleatoric** is bounded by capture quality (Part 35). The system **MUST** therefore route aleatoric problems to **capture improvement** (§M.4) and epistemic to **data/model improvement**.
+- The envelope **SHOULD** expose both components in `source.signals`; their abstention reasons differ — high aleatoric → "improve capture", high epistemic → "out of distribution / needs review" (§F/§Y).
+
+## X. Conformal Prediction
+
+- For coverage **guarantees** without distributional assumptions, continuous estimates (speed, spin) and classifications **SHOULD** use **split-conformal prediction**: a held-out calibration set fixes a nonconformity threshold so the interval/set achieves a **target coverage** (e.g. 90%).
+- The `ci` (continuous) or the prediction **set** (classification) **MUST** carry its nominal coverage; empirical coverage **MUST** be validated by **PICP** (§N) within tolerance.
+- Conformal sets that grow large (high uncertainty) **MUST** down-weight confidence or abstain (§F). Conformal **complements** calibration (§G); it does not replace it.
+
+## Y. Out-of-Distribution & Novelty Detection
+
+- Each model **MUST** have an **OOD/novelty gate**: inputs unlike its training regime (new rubber/paddle, unseen lighting, wheelchair play scored by an able-bodied model, a foreign sport) raise **epistemic** uncertainty → cap or **abstain**.
+- Methods: feature-space distance/density, energy/logit scores, or **ensemble disagreement** (§Z); the OOD score **MUST** appear in `source.signals`.
+- An OOD input is a distinct **"novel — needs review"** state; it **MUST NOT** be silently reported as a low-confidence in-distribution value (§F).
+
+## Z. Ensembles, Bayesian & Sampling Methods
+
+- Epistemic uncertainty for trained models **SHOULD** be estimated by **deep ensembles**, **MC-dropout**, or Bayesian posteriors; **ensemble disagreement** is a primary uncertainty + OOD signal (§Y).
+- The method + its latency/cost trade-off **MUST** be recorded per model (a real-time path **MAY** use a cheaper proxy); estimates **MUST** stay deterministic given fixed seeds (Part 34.AD).
+- Disagreement **MUST NOT** be collapsed into a falsely confident point estimate (§B.3) — spread widens the `ci`.
+
+## AA. Selective Prediction & Risk–Coverage
+
+- The abstain decision **MUST** be framed as **selective prediction**: maximize **coverage** (fraction answered) subject to a **risk** bound (error among answered) per domain (§K).
+- Each model **MUST** publish its **risk–coverage curve** and a chosen operating point; **selective accuracy** at that point **MUST** meet the Part 29 target.
+- Lowering the abstain threshold trades coverage for risk; the operating point is **config + reviewed** (§AB), never silently shifted.
+
+## AB. Cost-Sensitive Decisions & Thresholds
+
+- Abstain/decision thresholds **MUST** derive from a **cost/utility model** (cost of false-positive vs false-negative vs abstain) per decision type — not a global constant.
+- **High-stakes** decisions (officiating, injury/medical, selection) **MUST** use conservative thresholds (lower risk, more abstain, §AK); low-stakes (cosmetic stats) **MAY** answer more freely.
+- Thresholds are versioned config tied to model + tier (§I); a change **MUST** be reviewed and re-evaluated on the golden set (Part 29).
+
+## AC. Multi-Sensor / Multi-Model Fusion Reliability
+
+- When fusing sources (vision + radar + IMU + audio + environment, Part 35.N), **agreement MUST raise** confidence and **disagreement MUST raise** uncertainty — disagreement is a **signal**, never averaged away (§B.3).
+- Fusion **MUST** be principled (Bayesian / inverse-variance weighting / Dempster–Shafer); each source carries its own envelope + provenance (§J); a failed or OOD source is **dropped, not blended**.
+- Cross-source contradiction beyond tolerance **MUST** abstain or escalate (§Q) and **SHOULD** flag possible tampering (Part 35.T).
+
+## AD. Temporal Reliability & Consistency
+
+- For tracks/sequences, confidence **MUST** be temporally coherent: a filter (e.g. Kalman) propagates state + covariance; an isolated high-uncertainty frame is interpolated, a sustained one abstains.
+- **Physical-consistency checks** **MUST** gate outputs — a ball cannot teleport, exceed energy bounds, or reverse without contact (Part 19); a violation **MUST** down-weight/abstain (`tt.physics.validation.failed`, Part 39 §AQ).
+- Per-rally/-match confidence **MUST** reflect **temporal coverage** (how much of the rally was reliably tracked), not just the peak-frame confidence.
+
+## AE. Reliability of Derived & Longitudinal Artifacts
+
+- Profiles, dossiers, matchups, and trends are **derived**; their confidence **MUST** be bounded by (a) the inputs' confidence (§H), (b) **sample size** (§AF), and (c) **recency** (stale footage decays confidence).
+- A longitudinal claim ("player improved", "weakness fixed") **MUST** meet **statistical significance** (§AF); it **MUST NOT** be asserted on a within-noise difference.
+- Each derived artifact **MUST** expose evidence count + aggregate confidence + a "preliminary" badge when thin (Part 32.J / §M).
+
+## AF. Statistical Significance & Sample Size
+
+- Any **comparative** or **trend** claim **MUST** report sample size `n`, effect size, and a confidence interval; a difference inside the CI **MUST NOT** be claimed as real.
+- Minimum-sample gates per claim **MUST** be config (`MIN_SAMPLE`, Part 34.AL); below them the claim is `preliminary`/abstain.
+- **Multiple-comparison correction** **MUST** be applied when scanning many statistics (so the system does not invent "weaknesses"); A/B + efficacy analyses follow Part 34.BL (no peeking).
+
+## AG. Ground-Truth & Label Reliability
+
+- Ground truth is **not** infallible — labels carry uncertainty (annotation error, ambiguity). A model's achievable reliability is **bounded by its label quality** (Part 30).
+- Datasets **MUST** record **inter-annotator agreement (IAA)**, gold-check pass rates, and an adjudication trail (Part 30); low-IAA classes **MUST** widen confidence / cap claims.
+- Label noise **MUST** be modeled, not ignored; evaluation on noisy labels **MUST** acknowledge the noise floor (Part 29).
+
+## AH. Robustness & Adversarial Reliability
+
+- Confidence **MUST** drop under input corruption (compression, blur, occlusion, lighting shift) and adversarial/spoofed inputs (Part 36 R27); robustness **MUST** be tested with perturbation suites (§AB testing / Part 34.AZ).
+- Tamper-evidence (Part 35.T) + provenance (§J) **MUST** detect manipulated footage; a suspected manipulation **MUST** abstain + escalate (§Q), never silently score.
+- A model that stays **overconfident under corruption MUST NOT** pass the release gate (§G.4 / Part 29).
+
+## AI. Graceful Degradation Ladder
+
+- Each capability **MUST** define an explicit ladder — **full → reduced → coarse → abstain** — with the trigger and the resulting envelope at each rung.
+- Example (spin): T3 calibrated RPM (`high`) → T2 curvature estimate (`moderate`) → T1 coarse class (`preliminary`) → occluded/below-threshold (`abstain`).
+- Degradation **MUST** be automatic, signaled (Part 39 `reliability.reduced`/`capped`), and **reversible** when conditions improve — never a hard failure (Part 34.AM).
+
+## AJ. Production Calibration Monitoring
+
+- Calibration **MUST** be monitored **in production**, not only at training: track online **ECE**, **population stability** (input drift), and selective accuracy on a labeled trickle / shadow set.
+- Drift beyond the gate → `tt.reliability.model.drift_detected` + a recalibration trigger (§G.5, Part 29/39); until recalibrated, affected outputs **MUST** be down-weighted (§M).
+- **Canary/shadow** deployment **MUST** compare a new model's calibration to the incumbent before promotion (Part 39 §BB / 34.AU).
+
+## AK. Model Risk Tiers & Governance
+
+- Every model **MUST** be assigned a **risk tier** by stakes: **High** (officiating, injury/medical, selection), **Medium** (game-plan, profiling), **Low** (cosmetic stats).
+- Higher tiers **MUST** carry stricter calibration targets (§G), conservative thresholds (§AB), mandatory **human-in-the-loop** (Part 34.BQ), and a named accountable owner (model-risk management).
+- A model **MUST NOT** be used above the risk tier it was validated for; tier + validation status are part of provenance (§J).
+
+## AL. Reliability of LLM / Generative Outputs
+
+- An LLM/generative feature **MUST** be **grounded** — it may state only engine-produced numbers (with their envelopes) and **MUST** cite evidence (Part 34.BB); **token probability is NOT a reliability measure**.
+- LLM confidence **MUST** come from grounding + self-consistency / verification against the engines, not from fluency; an ungrounded claim **MUST** abstain.
+- A generative output inherits the **reliability of its sources** (§H) and **MUST NOT** upgrade a `preliminary` fact into a confident statement.
+
+## AM. Precision, Significant Figures & Reporting
+
+- Reported precision **MUST** match the uncertainty: "78 ± 6 km/h", **not** "78.3194 ± 6"; significant figures **MUST** be consistent with the `ci` (no false precision).
+- Units **MUST** accompany every continuous value (Part 34.AC); rounding rules **MUST** be deterministic and documented.
+- A point estimate **MUST NOT** be displayed without its band/interval where one exists (§M.3 / Part 32.J).
+
+## AN. Explainable Confidence ("why this number")
+
+- Every confidence **MUST** be **explainable**: its drivers (which signals, tier, calibration, sample size, OOD/agreement scores) **MUST** be retrievable via the evidence drill-down (Part 32.D) + provenance (Part 10/34.AK).
+- An abstention **MUST** state **why** (occlusion / OOD / thin data / tier / capture-fail), not a generic "unknown" (§F).
+- Explanations **MUST** be **faithful** to the actual computation — no post-hoc rationalization.
+
+## AO. Reliability Error Budget
+
+- The platform **MUST** maintain a **reliability error budget** (accuracy + calibration headroom vs the Part 29 targets) analogous to an SLO budget; regressions consume it.
+- Exhausting the budget (golden-set / calibration gate breach) **MUST** block releases (Part 29 / Part 37 §Z) until restored — reliability is a **release gate**, not best-effort.
+- The budget + burn rate **SHOULD** be visible on the MLOps dashboard (§AJ / Part 34.BA).
+
 This document is the authoritative reliability law for TT-OS; together with the data model (37), ontology (38), and event contract (39), it completes the platform's build foundation: **structure, meaning, communication, and honesty.**
 
 ---
