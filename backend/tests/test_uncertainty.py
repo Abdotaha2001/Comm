@@ -31,3 +31,17 @@ def test_expanded_uncertainty_scales_linearly_with_k():
 
 def test_combine_relative_is_quadrature():
     assert unc.combine_relative(0.3, 0.4) == pytest.approx(0.5)
+
+
+def test_localization_sigma_is_data_driven():
+    # A clean parabola has ~zero residual -> small sigma; noise raises it.
+    clean = [(i, 2.0 * i, 0.5 * i * i) for i in range(10)]
+    noisy = [(i, 2.0 * i + (3 if i % 2 else -3), 0.5 * i * i) for i in range(10)]
+    s_clean = unc.localization_sigma_from_track(clean)
+    s_noisy = unc.localization_sigma_from_track(noisy)
+    assert s_clean is not None and s_noisy is not None
+    assert s_noisy > s_clean
+
+
+def test_localization_sigma_needs_enough_points():
+    assert unc.localization_sigma_from_track([(0, 0, 0), (1, 1, 1)]) is None

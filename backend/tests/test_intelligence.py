@@ -35,6 +35,13 @@ def test_full_flagship_loop(client, db, coach_headers):
     assert prof.status_code == 201, prof.text
     assert prof.json()["style_class"]
     assert prof.json()["strengths"]
+    # Profile carries reliability (Part 40 §AE/§AF) + a propagated avg-speed interval
+    # (§H.2); strengths use the canonical status vocabulary (§E), not ad-hoc tags.
+    stats = prof.json()["aggregated_stats"]
+    assert "reliability" in stats and "avg_speed_reliability" in stats
+    assert stats["avg_speed_reliability"]["ci"] is not None
+    assert prof.json()["strengths"][0]["status"] in (
+        "abstain", "preliminary", "moderate", "high", "verified")
     assert client.get(f"/v1/players/{a['id']}/profile", headers=coach_headers).status_code == 200
 
     # 2) opponent dossier (from in-system player B)

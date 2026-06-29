@@ -30,6 +30,32 @@ def combine_relative(*relatives: float) -> float:
     return math.sqrt(sum(r * r for r in relatives))
 
 
+def localization_sigma_from_track(points, *, min_points: int = 5,
+                                  lo: float = 0.5, hi: float = 15.0):
+    """Estimate the per-coordinate localisation std σ_px (px) **from the data**
+    (Part 40 §AP/§AG) as the residual of a degree-2 fit to the trajectory — the
+    ball follows a smooth (near-ballistic) path, so deviations are measurement
+    noise. Returns ``None`` when there are too few points to estimate; callers
+    then fall back to the measured default. Result is clamped to [lo, hi]."""
+    pts = list(points)
+    if len(pts) < min_points:
+        return None
+    import numpy as np
+
+    t = np.array([p[0] for p in pts], dtype=float)
+    t = t - t.mean()
+    x = np.array([p[1] for p in pts], dtype=float)
+    y = np.array([p[2] for p in pts], dtype=float)
+    try:
+        rx = x - np.polyval(np.polyfit(t, x, 2), t)
+        ry = y - np.polyval(np.polyfit(t, y, 2), t)
+    except Exception:  # noqa: BLE001 — degenerate fit
+        return None
+    dof = max(1, len(pts) - 3)  # a degree-2 fit consumes 3 parameters
+    var = (float((rx ** 2).sum()) + float((ry ** 2).sum())) / (2.0 * dof)
+    return min(hi, max(lo, var ** 0.5))
+
+
 def speed_uncertainty(
     speed_kmh: float,
     disp_px: float,

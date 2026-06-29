@@ -4,6 +4,7 @@ Scaffold note: the baseline CV does not yet attribute shots to a specific player
 (that needs ReID/identity, Part 04), so a player's own videos are treated as their
 shots. Confidence is capped accordingly and scales with sample size (Part 10).
 """
+import math
 from collections import Counter
 
 from .. import reliability
@@ -18,8 +19,13 @@ def _pct(n: int, total: int) -> float:
     return round(n / total * 100, 1) if total else 0.0
 
 
-def _conf_tag(n: int) -> str:
-    return "HIGH" if n >= MIN_SAMPLE * 3 else "MODERATE" if n >= MIN_SAMPLE else "LOW"
+def _status(n: int) -> str:
+    # Canonical reliability status (Part 40 §E) — one vocabulary across the platform.
+    # The uncalibrated baseline caps at 'preliminary' (§M); below the minimum sample
+    # it abstains (§AF).
+    if n < MIN_SAMPLE:
+        return reliability.STATUS_ABSTAIN
+    return reliability.STATUS_PRELIMINARY
 
 
 def _style(stats: dict) -> str:
@@ -37,12 +43,13 @@ def _strengths(stats: dict) -> list:
     out, n = [], stats["total_shots"]
     if stats["avg_speed_kmh"] and stats["avg_speed_kmh"] > 40:
         out.append({"text": f"High shot speed (~{stats['avg_speed_kmh']} km/h)",
-                    "evidence": f"{n} shots", "confidence": _conf_tag(n)})
+                    "evidence": f"{n} shots", "status": _status(n)})
     if stats["attack_pct"] >= 55:
         out.append({"text": f"Aggressive attacker ({stats['attack_pct']}% attacking shots)",
-                    "evidence": f"{n} shots", "confidence": _conf_tag(n)})
+                    "evidence": f"{n} shots", "status": _status(n)})
     if not out:
-        out.append({"text": "No clear strengths yet", "evidence": f"{n} shots", "confidence": "LOW"})
+        out.append({"text": "No clear strengths yet", "evidence": f"{n} shots",
+                    "status": reliability.STATUS_ABSTAIN})
     return out
 
 
@@ -50,10 +57,10 @@ def _weaknesses(stats: dict) -> list:
     out, sided = [], stats["fh_pct"] + stats["bh_pct"]
     if sided and stats["fh_pct"] >= 75:
         out.append({"text": f"Forehand over-reliance ({stats['fh_pct']}%)",
-                    "evidence": "sided shots", "confidence": _conf_tag(stats["total_shots"])})
+                    "evidence": "sided shots", "status": _status(stats["total_shots"])})
     if stats["total_shots"] < MIN_SAMPLE:
         out.append({"text": "Insufficient data for reliable weaknesses",
-                    "evidence": f"{stats['total_shots']} shots", "confidence": "LOW"})
+                    "evidence": f"{stats['total_shots']} shots", "status": reliability.STATUS_ABSTAIN})
     return out
 
 
@@ -104,6 +111,21 @@ def aggregate_profile(db, org_id: str, player_id: str) -> dict:
     rel = reliability.summarize(confidence, calibrated=False)
     rel["n_shots"] = n
     stats["reliability"] = rel
+    # Propagate per-shot speed uncertainty into the aggregate mean (§H.2): with
+    # k=2 half-widths, σ_i = ci/2 and σ_mean = √(Σσ_i²)/n (independent shots).
+    sigmas = [
+        ((s.speed_ci / 2.0) if s.speed_ci is not None else (s.speed_kmh or 0.0) * 0.25)
+        for s in shots if s.speed_kmh
+    ]
+    if sigmas:
+        sigma_mean = math.sqrt(sum(sg * sg for sg in sigmas)) / len(sigmas)
+        avg = stats["avg_speed_kmh"]
+        stats["avg_speed_reliability"] = reliability.build(
+            value=avg, confidence=confidence, tier="t1",
+            ci=[round(avg - 2 * sigma_mean, 1), round(avg + 2 * sigma_mean, 1)],
+            unit="km/h", calibrated=False,
+            source={"measure": "avg_speed", "propagated": True, "n": len(sigmas)},
+        ).to_dict()
     return {
         "style_class": _style(stats),
         "aggregated_stats": stats,

@@ -152,6 +152,11 @@ def calibration_record(n_clips: int = 3, n_frames: int = 60) -> dict:
                 "ece_after_temperature", "localization_picp", "n",
             )
         },
+        # A persistable, applicable calibrator (Part 40 §G/§BE) — fitted on the
+        # golden (synthetic) set; live application awaits a representative set.
+        "calibrator": cal.Calibrator(
+            temperature=rep.get("temperature", 1.0), dataset="golden_synthetic"
+        ).to_dict(),
         "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 

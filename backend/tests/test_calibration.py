@@ -51,3 +51,15 @@ def test_release_gate():
     bad_confs = [0.99] * 100
     bad_correct = [True] * 50 + [False] * 50
     assert cal.passes_gate(bad_confs, bad_correct) is False
+
+
+def test_calibrator_persists_and_reduces_ece():
+    probs = [0.99] * 100
+    labels = [True] * 50 + [False] * 50
+    c = cal.Calibrator.fit(probs, labels, dataset="golden")
+    assert c.temperature > 1.0 and c.dataset == "golden"
+    assert cal.ece(c.apply(probs), labels) < cal.ece(probs, labels)
+    # Persists + reloads losslessly, and applies to scalars too.
+    c2 = cal.Calibrator.from_dict(c.to_dict())
+    assert abs(c2.temperature - c.temperature) < 1e-3
+    assert isinstance(c.apply(0.9), float)

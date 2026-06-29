@@ -79,6 +79,11 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
     for ri, seg in enumerate(rallies):
         shots, events, shot_idx = [], [], 0
         wing = "fh"
+        # Data-driven localisation noise for this rally (residual of a smooth fit),
+        # falling back to the measured default when the segment is too short (§B/§AP).
+        seg_sigma_px = uncertainty.localization_sigma_from_track(
+            [(t[0], t[1], t[2]) for t in seg]
+        ) or uncertainty.LOCALIZATION_STD_PX
         # serve marker at rally start
         events.append({
             "type": "serve", "frame": seg[0][0], "ts_ms": _ms(seg[0][0], fps),
@@ -107,7 +112,8 @@ def analyze_video(path: str, detector: Optional[BallDetector] = None) -> dict:
                 disp_px = (vx0 ** 2 + vy0 ** 2) ** 0.5
                 speed_kmh = round((disp_px * fps / px_per_m) * 3.6, 1) if px_per_m else 0.0
                 # Propagated interval (GUM first-order) — replaces the old ±30%.
-                speed_ci, unc = uncertainty.speed_uncertainty(speed_kmh, disp_px, tier="t1", k=2.0)
+                speed_ci, unc = uncertainty.speed_uncertainty(
+                    speed_kmh, disp_px, tier="t1", sigma_px=seg_sigma_px, k=2.0)
                 shots.append({
                     "idx": shot_idx, "frame": f1, "ts_ms": _ms(f1, fps),
                     "stroke_type": "drive", "spin_type": None, "wing": wing,

@@ -140,6 +140,40 @@ def calibration_report(confidences: Sequence[float], correct: Sequence[bool], n_
     }
 
 
+class Calibrator:
+    """A persistable confidence calibrator (binary temperature scaling, Part 40 §G).
+
+    Fit once on (confidence, correct) pairs, persist `to_dict()` with the model
+    card (§BE), and `apply()` to map raw confidences onto calibrated ones. `T>1`
+    softens overconfidence. The `dataset` records what it was calibrated on — a
+    synthetic-only fit MUST stay flagged so the OOD gate (§Y) catches real drift.
+    """
+
+    def __init__(self, temperature: float = 1.0, method: str = "temperature",
+                 dataset: str | None = None):
+        self.temperature = float(temperature)
+        self.method = method
+        self.dataset = dataset
+
+    @classmethod
+    def fit(cls, confidences, correct, dataset: str | None = None) -> "Calibrator":
+        return cls(temperature=fit_temperature(confidences, correct), dataset=dataset)
+
+    def apply(self, p):
+        if isinstance(p, (int, float)):
+            return apply_temperature([p], self.temperature)[0]
+        return apply_temperature(list(p), self.temperature)
+
+    def to_dict(self) -> dict:
+        return {"method": self.method, "temperature": round(self.temperature, 4),
+                "dataset": self.dataset}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Calibrator":
+        return cls(temperature=d.get("temperature", 1.0),
+                   method=d.get("method", "temperature"), dataset=d.get("dataset"))
+
+
 def passes_gate(
     confidences: Sequence[float],
     correct: Sequence[bool],
