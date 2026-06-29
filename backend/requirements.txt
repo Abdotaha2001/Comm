@@ -9,5 +9,6 @@ python-multipart>=0.0.9
 numpy>=1.26
 opencv-python-headless>=4.8
 pytest>=8.0
+PyYAML>=6.0
 # Postgres driver (production); not needed for the SQLite dev/test default:
 psycopg2-binary>=2.9

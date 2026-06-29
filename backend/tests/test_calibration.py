@@ -42,8 +42,10 @@ def test_temperature_scaling_reduces_overconfidence():
 
 
 def test_release_gate():
-    good_confs = [0.95] * 95 + [0.05] * 5
-    good_correct = [True] * 95 + [False] * 5
+    # Well-calibrated: confidence 0.9 with 90% correct -> ECE ~ 0 (comfortably
+    # below target; avoid sitting exactly on the 0.05 boundary).
+    good_confs = [0.9] * 100
+    good_correct = [True] * 90 + [False] * 10
     assert cal.passes_gate(good_confs, good_correct) is True
 
     bad_confs = [0.99] * 100

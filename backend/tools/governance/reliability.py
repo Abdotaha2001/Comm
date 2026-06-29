@@ -52,8 +52,9 @@ def check_reliability() -> Check:
     if rel.apply_cap(0.99, certification="fail") > 0.3:
         chk.fail("apply_cap: 'fail' capture must cap to <=0.3 (Part 35 single source)")
 
-    # §G.4 — calibration release gate discriminates.
-    if not cal.passes_gate([0.95] * 95 + [0.05] * 5, [True] * 95 + [False] * 5):
+    # §G.4 — calibration release gate discriminates (well-calibrated: 0.9 conf,
+    # 90% correct -> ECE ~ 0, comfortably below target).
+    if not cal.passes_gate([0.9] * 100, [True] * 90 + [False] * 10):
         chk.fail("passes_gate: a well-calibrated set must pass")
     if cal.passes_gate([0.99] * 100, [True] * 50 + [False] * 50):
         chk.fail("passes_gate: an overconfident set must fail (§G.4)")
