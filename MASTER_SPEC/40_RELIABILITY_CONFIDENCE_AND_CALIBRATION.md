@@ -479,6 +479,96 @@ Each **MUST** be monitored (§AJ) with a detection signal + remedy; an unaddress
 - A confidence value **MUST** be reproducible from `{model_version, calibration_version, code_sha, inputs, seed}` (§J, Part 34.AK/AD): identical inputs → identical envelope.
 - When a model/calibration changes, historical confidences **MUST** remain attributable to the version that produced them; re-scoring old data **MUST** create a **new versioned** result, never mutate the old (Part 34.BE).
 
+---
+
+## BG. Calibration Fairness & Subgroup Parity
+
+- Confidence **MUST** be calibrated **per subgroup**, not only in aggregate — across para classes, junior vs senior, sex, **left- vs right-handed**, and skin tone for detection (Part 34.BF / Part 29 fairness).
+- Per-group **ECE** + selective accuracy **MUST** be reported; a subgroup whose calibration or accuracy is materially worse **MUST** block release — a model that is confident-but-wrong for one group is a fairness defect (§AO).
+- No subgroup may be silently served lower reliability; where data for a group is thin, the system **MUST** widen confidence / abstain rather than overclaim (§W epistemic).
+
+## BH. Standards Alignment
+
+- Physical-quantity uncertainty (speed, spin, placement) **SHOULD** follow the **ISO/IEC GUM** (Guide to the Expression of Uncertainty in Measurement): combined standard uncertainty `u_c`, coverage factor `k`, expanded uncertainty `U = k·u_c`; the `ci` **MUST** state its coverage (§AP/§BP).
+- Trustworthy-AI practice **SHOULD** align with the **NIST AI RMF** (govern · map · measure · manage) and ISO/IEC AI standards (e.g. 42001 management system, 24028 trustworthiness); the controls in this Part map to those functions.
+- Standards alignment is an **auditable claim** (§BE), never a marketing label.
+
+## BI. Calibrated Regression & Quantile Outputs
+
+- Continuous outputs **MUST** be calibrated as **regression** (distinct from classification calibration §G): e.g. **quantile regression** giving calibrated `[lo,hi]` at a target coverage, or a calibrated predictive distribution.
+- **Quantile crossing** (`lo > hi`) **MUST** be prevented; coverage **MUST** be validated by PICP (§N); the training loss **SHOULD** be the pinball/quantile loss.
+- A point estimate without a calibrated interval is `preliminary` at best (§AM).
+
+## BJ. Confidence in Absence / Negative Results
+
+- A negative finding ("no weakness found", "no service fault") **MUST** distinguish **"examined and found none" (high confidence)** from **"insufficient data to tell" (abstain)** — absence of evidence is not evidence of absence without coverage.
+- A negative result **MUST** carry its own confidence + the **coverage** it rests on (how much was examined); thin coverage → the negative is `preliminary`/abstain.
+
+## BK. Systematic Bias vs Random Variance
+
+- Error **MUST** be decomposed into **systematic bias** (a consistent offset — e.g. a camera over-reading speed) and **random variance**; measurable bias **MUST** be calibrated out and the correction tracked + validated (§BF).
+- Residual (uncorrected) bias **MUST** bound the accuracy claim (§BA); confidence **MUST NOT** ignore a known bias.
+
+## BL. Active Learning & Uncertainty Sampling
+
+- Model **epistemic** uncertainty (§W) and OOD scores (§Y) **MUST** drive **what to label next** (Part 30): high-uncertainty, high-disagreement, and novel samples are prioritized for annotation.
+- This closes the loop — uncertainty → targeted labels → retrain/recalibrate (§AJ) → reduced uncertainty; coverage of the uncertain regions over time **MUST** be tracked.
+
+## BM. Use-Case Reliability Matrix
+
+The admissible reliability bar **MUST** vary by use case:
+
+| Use case | Minimum admissible status | Rule |
+|----------|---------------------------|------|
+| Officiating (decisive) | `verified` only | else abstain → human (Part 09 / §Q) |
+| Coaching / game-plan | `moderate`+ | `preliminary` labelled (§M) |
+| Player self-serve | `preliminary`+ | friendly framing (§BD) |
+| Broadcast / fan | `preliminary`+ | confidence badge required |
+| Betting integrity | `verified` only | forbidden otherwise (Part 33) |
+| Medical / injury | `high`+ and human-in-loop | never autonomous (§AK) |
+
+An output **MUST NOT** be consumed by a use case whose bar it does not meet.
+
+## BN. Per-Output Reliability Appendix
+
+Consolidated reference (method · tier availability · tolerance §BA · abstain rule). Exact numbers live in config + Part 29 targets; this is the index.
+
+| Output | Method | Tier | Tolerance | Abstain when |
+|--------|--------|------|-----------|--------------|
+| Ball position | detector + track | T1+ | ± px / cm (calibrated) | visibility < 90% |
+| Speed | trajectory + calibration | T2+ | ± X% | uncalibrated on T1 |
+| Spin axis / RPM | curvature (T2) / high-speed (T3) | T2 coarse · T3 true | ± Y% | markerless below threshold |
+| Placement | homography → court frame | T2+ | ± Z cm | uncalibrated frame |
+| Bounce / event | detector + physics consistency | T1+ | — | physics violation (§AD) |
+| Stroke class | hierarchical classifier (§AV) | T1+ | — | top-1 margin < threshold |
+| Score | scoreboard OCR | T1+ | — | digit conf < 0.9 |
+| Profile stat | aggregate (§AU) | T1+ | CI-bounded | n < `MIN_SAMPLE` |
+| Win-probability | tactical model | T1+ | calibrated `[0,1]` | thin head-to-head |
+| Game-plan | decision under uncertainty (§AX) | T1+ | — | low evidence |
+
+## BO. Reliability Incident Response
+
+- A **reliability incident** (a shipped over/under-confident output causing harm — e.g. a public wrong officiating call) **MUST** follow: **detect** (monitoring §AJ / report) → **contain** (kill-switch the feature, Part 34.AU) → **correct** (recalibrate / rollback) → **disclose** (responsible disclosure, Part 31) → **postmortem** (blameless, Part 34.BA) → **prevent** (gate update §AO).
+- Officiating/medical reliability incidents are **High severity** (§AK) and **MUST** page immediately; the immutable evidence (Part 39 §L) supports the review.
+
+## BP. Frequentist vs Bayesian Interval Semantics
+
+- Every `ci` **MUST** declare its semantics — a **frequentist confidence interval** (coverage over repeated sampling) or a **Bayesian credible interval** (posterior probability mass); they answer different questions and **MUST NOT** be conflated.
+- The choice **MUST** be consistent per output and recorded in `source`; coverage claims (§X/§N) are interpreted accordingly.
+
+## BQ. Reliability Open Problems & Research Roadmap
+
+Honest acknowledgment (ties Part 36 risks) — these are hard and partially unsolved; the platform **MUST** abstain/cap rather than overclaim until they are:
+- **Markerless spin uncertainty** on T1/T2 (no ground truth) — cap + flag (§M); roadmap: SpinDOE calibration + high-speed (Part 26 / 36 R2).
+- **Single-camera 3D** depth ambiguity — T1 cannot yield true 3D (§L); roadmap: T2 lift, T3 multi-cam.
+- **Calibration under domain shift** (new venues/equipment) — OOD gate (§Y) + production monitoring (§AJ); roadmap: continual recalibration.
+- **Real-time UQ** within latency budgets (§AY) — cheaper proxies today; roadmap: distilled uncertainty heads.
+- **Label-noise floor** (§AG) — bounds achievable accuracy; roadmap: better annotation protocols (Part 30).
+
+## BR. Reliability Glossary & Notation
+
+Symbols/terms (canonical via Part 38 where applicable): `c` confidence · `ci=[lo,hi]` interval · `τ` capture tier · `σ` source/provenance · `s` status · **ECE/MCE** calibration error · **PICP** interval coverage · **aleatoric** (data noise) vs **epistemic** (model ignorance) · **OOD** out-of-distribution · **selective accuracy** (accuracy on non-abstained) · **`abstain`** (Part 38) the decline-to-assert state · **`u_c` / `k` / `U`** GUM uncertainties (§BH). This notation is used across Parts 10/29/35/39/40.
+
 This document is the authoritative reliability law for TT-OS; together with the data model (37), ontology (38), and event contract (39), it completes the platform's build foundation: **structure, meaning, communication, and honesty.**
 
 ---
