@@ -357,6 +357,128 @@ Conforms **iff**:
 - Exhausting the budget (golden-set / calibration gate breach) **MUST** block releases (Part 29 / Part 37 §Z) until restored — reliability is a **release gate**, not best-effort.
 - The budget + burn rate **SHOULD** be visible on the MLOps dashboard (§AJ / Part 34.BA).
 
+---
+
+## AP. Mathematical Foundations & Formal Definitions
+
+- **Envelope type:** an estimate is a tuple `E = (v, c, [lo,hi], τ, σ, s)` with `c ∈ [0,1]`, tier `τ`, source `σ`, status `s` (§C).
+- **Perfect calibration (classification):** `P(Y = ŷ | C = c) = c` for all `c`. Deviation is **ECE** `= Σ_b (n_b/N)·|acc(b) − conf(b)|` over confidence bins `b`; **MCE** `= max_b |acc(b) − conf(b)|`.
+- **Proper scoring rules:** **Brier** `= (1/N) Σ (c_i − y_i)²`; **log-loss** `= −(1/N) Σ [y_i ln c_i + (1−y_i) ln(1−c_i)]`. Lower is better; both **MUST** be reported (§N).
+- **Interval coverage:** `PICP = (1/N) Σ 1{ lo_i ≤ y_i ≤ hi_i }`, target ≈ nominal.
+- **Error propagation (continuous):** for `f(x₁..xₙ)` with independent `xᵢ` of std `σᵢ`, `σ_f² ≈ Σ (∂f/∂xᵢ)² σᵢ²` (add covariance terms if correlated). **Monte-Carlo MAY** replace linearization for nonlinear `f` (Magnus/trajectory, Part 19).
+- **Confidence composition:** independent chain `c_out = Π_k c_k`; required-all (min-gate) `c_out = min_k c_k` (§H/§AA).
+- **Bayesian update:** `p(θ | D) ∝ p(D | θ)·p(θ)` (skill updating, §AW).
+- **Conformal coverage (split):** with nonconformity scores on a calibration set, the level-`(1−α)` set satisfies `P(Y ∈ set) ≥ 1−α`, distribution-free (§X).
+- **Temperature scaling:** calibrated probabilities `= softmax(z / T)`, `T` fit by minimizing held-out NLL; `T > 1` softens overconfidence (§G).
+
+## AQ. Reference Constants & Default Thresholds
+
+Consolidated defaults (all are **config**, not magic numbers — Part 34.AL; this is the registry of defaults).
+
+| Constant | Default |
+|----------|---------|
+| Status bands | high ≥ 0.90 · moderate 0.70–0.90 · preliminary 0.50–0.70 · abstain < domain threshold |
+| `verified` | confidence ≥ 0.95 **and** ground-truth validated |
+| ECE target / MCE | ECE ≤ 0.05 · MCE ≤ 0.10 |
+| PICP tolerance | ± 0.03 of nominal |
+| Conformal default coverage | 0.90 |
+| Tier ceilings (§I) | Platinum 1.0 · Gold 0.9 · Silver 0.75 · Bronze 0.6 · Fail → abstain |
+| `MIN_SAMPLE` (claims) | profile stat 30 · trend 100 (per §AF) |
+| Abstain thresholds | per domain (§K); default conf < 0.5 |
+| Real-time UQ latency budget | within the Critical event SLA (Part 39 §AL) |
+
+## AR. Worked Examples (end-to-end)
+
+1. **Spin, T1 phone (uncalibrated):** model conf 0.80 → uncalibrated cap 0.70 (§M) → Bronze ceiling 0.60 (§I) → `min(0.70, 0.60) = 0.60` → `status = preliminary`, `calibrated=false`; below 0.50 → abstain.
+2. **Speed, T2 Gold (calibrated):** conf 0.92, `ci = 78 ± 6 km/h`, Gold ceiling 0.90 → `min(0.92, 0.90) = 0.90` → `high`.
+3. **Independent chain:** detection 0.95 × tracking 0.90 × physics 0.85 = **0.727** → `moderate` (§AP composition).
+4. **Officiating min-gate:** components `{sync 0.99, recon 0.97, ground_truth = abstain}` → `min → abstain` (one required component abstained, §H.4) → escalate to umpire (§Q).
+5. **Profile aggregation:** 5 rallies → wide Wilson/t-interval → `preliminary`; 200 rallies → narrows → `moderate/high`; "improved vs last season" requires significance (§AF/§AU), else not claimed.
+
+## AS. Reliability Status Lifecycle
+
+- A value's status is a **function** of (confidence, calibration, tier, sample, drift), recomputed on each input — it **MUST NOT** be sticky.
+- Upward path: `preliminary →(more data) moderate →(calibrated + tier) high →(ground-truth) verified`.
+- Downward path: `high →(drift / stale calibration) reduced`; `any →(capture fail / OOD / occlusion) abstain`.
+- Each transition **MUST** emit the matching Part 39 reliability event (`reduced`/`capped`/`abstained`) and **MUST** be explainable (§AN).
+
+## AT. Geometric & Spatial Uncertainty
+
+- Spatial estimates (ball position, placement, 3D point) **MUST** carry a **covariance** (2D/3D) or an error radius — not a bare point; placement heatmaps render the distribution (Part 32.V).
+- 3D reconstruction uncertainty **MUST** propagate from calibration residual + triangulation geometry (Part 35.AE); poor geometry (small baseline, low overlap) widens the covariance → **MAY** abstain.
+- Court-frame/homography uncertainty (Part 35.BD) **MUST** propagate into placement; an uncalibrated frame **MUST** cap spatial confidence.
+
+## AU. Statistical-Estimator Uncertainty
+
+- **Proportions** (win %, % topspin): **Wilson** or Agresti–Coull intervals (never naive normal), especially at small `n`.
+- **Counts** (loops per match): **Poisson** interval.
+- **Means** (average speed): **t-interval** with sample std; always report `n`.
+- The estimator + interval method **MUST** be recorded in `source`; a statistic with `n < MIN_SAMPLE` is `preliminary`/abstain (§AF).
+
+## AV. Hierarchical & Coarse-to-Fine Confidence
+
+- For hierarchical labels (Part 38: `stroke → loop → hook_loop`; `spin → sidespin → sidespin_left`), confidence **MUST** be reported at each level; the system **MUST** answer at the **finest level it is confident** and abstain below that — never guess the leaf.
+- A parent's confidence **MUST** be ≥ its child's (a leaf cannot be more certain than its category). Coarse-to-fine abstention ("it's a loop, sub-type uncertain") is a valid, useful result.
+
+## AW. Bayesian Skill Updating (Longitudinal)
+
+- A player's latent skill/style **MUST** be updated **Bayesianly** across matches: `posterior = f(prior, new_evidence)`, **recency-weighted** (older footage decays) with **shrinkage** toward a population prior for thin data (so one match cannot swing the estimate).
+- Longitudinal confidence **MUST** widen when footage is stale/sparse (§AE) and **MUST** express trend uncertainty (§AF) — a point estimate alone is forbidden.
+
+## AX. Decision-Making Under Uncertainty
+
+- Recommendations (game plans, Part 21) **MUST** be made under **expected utility**, not point estimates: weigh each option by its outcome distribution × confidence; under high uncertainty prefer **robust** options (minimize worst-case regret).
+- A recommendation **MUST** surface its confidence + the dominant uncertainty (Part 32.O "why this plan"); a low-confidence plan **MUST** be labelled preliminary and **MUST NOT** be presented as decisive.
+- The system **MUST NOT** recommend an action whose expected benefit is within the noise of the alternative (§AF).
+
+## AY. Real-Time vs Batch Reliability
+
+- **Real-time** paths (live officiating/coaching, Part 39 SLAs) **MAY** use cheaper UQ (single calibrated model, no full ensemble) but **MUST** still carry the envelope and abstain under uncertainty — **speed MUST NOT buy false confidence**.
+- **Batch** paths **MUST** use the full UQ stack (ensembles/conformal/consistency) and **MAY** revise a real-time result later; a revision **MUST** be versioned + provenance-tracked (§BF) and **MUST NOT** silently overwrite an officiating record (Part 39 §L).
+
+## AZ. Confidence Failure Modes
+
+Each **MUST** be monitored (§AJ) with a detection signal + remedy; an unaddressed mode **MUST** block release (§AO):
+
+| Failure mode | Signal | Remedy |
+|--------------|--------|--------|
+| Overconfidence | ECE high, conf > acc | recalibrate (§G) |
+| Underconfidence | conf < acc, needless abstain | recalibrate; lower threshold (§AB) |
+| Confidence collapse | all probs near 0/1 | temperature/retrain |
+| Calibration drift | online ECE rising | recalibrate (§AJ) |
+| Shortcut confidence | high on spurious cues | robustness tests (§AH), retrain |
+| Shift miscalibration | OK in-dist, broken OOD | OOD gate (§Y), abstain |
+
+## BA. Measurement Tolerances & Acceptance Bands
+
+- Each measured quantity **MUST** declare an **acceptance tolerance** (the error the platform commits to at a tier), tied to Part 29 targets — e.g. speed ± X% (T2+), spin RPM ± Y% (T3), placement ± Z cm (calibrated).
+- A value whose `ci` exceeds its tolerance **MUST** be `preliminary`/abstain. Tolerances are the **accuracy contract** with users and **MUST** appear in reports + the reliability model card (§BE).
+
+## BB. Missing Data & Imputation
+
+- Missing inputs **MUST** trigger **abstain by default**; imputation is permitted only where principled, **MUST** be flagged (`imputed=true`), and **MUST** carry a confidence penalty.
+- An imputed value **MUST NOT** feed a high-stakes decision (§AK) without human review (§Q).
+
+## BC. Ranking & Comparison Uncertainty
+
+- A ranking/comparison output (best shot, stronger player, top weakness) **MUST** express **P(A > B)** and a "too close to call" band; rank stability under input perturbation **MUST** be reported.
+- An ordering whose pairwise differences fall within noise **MUST NOT** be presented as definitive (§AF).
+
+## BD. Persona-Aware Reliability Presentation
+
+- The **same** envelope **MUST** drive **persona-appropriate** rendering (Part 32 personas): coach → band + evidence; player → simplified ("solid" / "needs more data"); umpire → decisive-or-abstain (advisory, Part 09); scientist → full distribution + metrics.
+- Presentation **MUST NOT** alter the underlying confidence — only its rendering; **abstain MUST remain visible** to every persona.
+
+## BE. Reliability Audit, Certification & Model Card
+
+- Every model's **model card** **MUST** include a reliability section: calibration metrics (§N), risk tier (§AK), tolerances (§BA), failure modes (§AZ), OOD scope, and known limitations.
+- Reliability claims **MUST** be **independently auditable** — the eval set, calibration record, and golden-set results **MUST** be reproducible (§BF, Part 29); officiating-grade reliability **MUST** be externally validated (Part 35.T).
+
+## BF. Reproducibility & Versioning of Confidence
+
+- A confidence value **MUST** be reproducible from `{model_version, calibration_version, code_sha, inputs, seed}` (§J, Part 34.AK/AD): identical inputs → identical envelope.
+- When a model/calibration changes, historical confidences **MUST** remain attributable to the version that produced them; re-scoring old data **MUST** create a **new versioned** result, never mutate the old (Part 34.BE).
+
 This document is the authoritative reliability law for TT-OS; together with the data model (37), ontology (38), and event contract (39), it completes the platform's build foundation: **structure, meaning, communication, and honesty.**
 
 ---
