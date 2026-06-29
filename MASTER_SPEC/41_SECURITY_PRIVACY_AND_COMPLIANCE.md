@@ -24,6 +24,8 @@ Guarantee that the platform **protects the people in its data** and **cannot be 
 - **G6.** Security invariants are **CI-enforced** (§Z), not left to reviewer vigilance — drift fails the build.
 - **G7.** The system is **honest about its gaps** (§AA): production-blocking controls are tracked, not hidden behind a green checkmark.
 - **G8.** Compliance (GDPR / biometric / children / EU AI Act) is an **auditable, evidenced claim** (§W/§AB), never a marketing label.
+- **G9.** Decisions about people (officiating, selection, profiling) are **contestable** — human review, explanation, and a signed appeal path (§AC/§L).
+- **G10.** Where the platform touches the **physical world** (robots, wearables), security **is safety**: authenticated commands + fail-safe defaults (§AH).
 
 ### A.3 Non-goals
 - Not the data model (Part 37) — it **classifies** Part 37's fields and constrains their access.
@@ -32,7 +34,7 @@ Guarantee that the platform **protects the people in its data** and **cannot be 
 - Not federation organizational governance (Part 15) — it is the **technical** security/privacy contract.
 
 ### A.4 Relationship to Parts
-Formalizes Part 31; extends Part 13 (auth/RBAC/tenancy) and Part 15 (consent/safeguarding); classifies Part 37 fields; uses Part 39 §L (immutable audit events) + the transactional outbox; binds Part 40 §BO (reliability-incident response) + officiating reproducibility; consumes Part 35 provenance/tamper-evidence (capture chain-of-custody); tags data classes as canonical ids in Part 38; ties risks to Part 36.
+Formalizes Part 31; extends Part 13 (auth/RBAC/tenancy) and Part 15 (consent/safeguarding/residency); classifies Part 37 fields; uses Part 39 §L (immutable audit events) + the transactional outbox; binds Part 40 §BO (reliability-incident response) + officiating reproducibility; consumes Part 35 provenance/tamper-evidence (capture chain-of-custody); governs the automated decisions of Parts 08/09/17 (§AC); secures the cyber-physical/IoT surface of Part 14 (§AH); guards the pretrained-weights supply chain of Part 26 (§AF/§Q); tags data classes as canonical ids in Part 38; ties risks to Part 36.
 
 ---
 
@@ -81,6 +83,9 @@ Every persisted field and artifact **MUST** carry exactly one **class**; the cla
 - **D.7 Brute-force & ATO.** Per-account + per-IP lockout, anomaly/risk-based step-up auth (new device / impossible travel) (⬜).
 - **D.8 Account recovery** (the #1 ATO vector): no account enumeration (§M.5), signed time-limited reset links, recovery codes, session invalidation on reset (⬜).
 - **D.9 Security-event notifications:** email on new-device login and on password/MFA/email change (⬜).
+- **D.10 CSPRNG.** All tokens, ids, salts, nonces, and reset secrets **MUST** come from a cryptographically secure RNG (`os.urandom`/`secrets`) — **never** `random`; this **MUST** be asserted, not assumed.
+- **D.11 API keys** are scoped + hashed + rotatable + revocable + expiring — full lifecycle in §AD.6.
+- **D.12 Enterprise SSO.** Hand-rolled JWT is the **scaffold**; federation/academy tenants use **OIDC/SAML SSO + SCIM** (§AD) as the authoritative identity path.
 
 ---
 
@@ -106,6 +111,7 @@ Every persisted field and artifact **MUST** carry exactly one **class**; the cla
 - **E.4 Field-level / ABAC.** Access is attribute-based beyond role: `special`/`medical` fields are **hidden from `coach`/`scout`** even on a record they can otherwise read; `medical` sees only **their** athletes; access is **purpose-bound** (§U).
 - **E.5 Mass-assignment protection.** Write models **MUST** whitelist editable fields; a create/update can **never** set `org_id`, `role`, `status`, `id`, ownership, or another tenant's keys (✅ today via Pydantic create/update models — keep it that way; add a CI check, §Z).
 - **E.6 Privileged-access discipline.** Separation of duties, **just-in-time** elevation, **break-glass** with mandatory audit, periodic **access reviews**, and privileged-user activity monitoring (⬜).
+- **E.7 Decision architecture.** At scale, RBAC + ABAC + field-level **SHOULD** be evaluated by a central **PDP/policy-as-code** with **fail-closed** enforcement, and **consent is an authorization input** (deny on absent/withdrawn consent for `biometric`/`special`/`minor`) — see §AE.
 
 ---
 
@@ -141,7 +147,9 @@ Every persisted field and artifact **MUST** carry exactly one **class**; the cla
 - **H.5 Withdrawal propagates to derived data.** Consent withdrawal **MUST** stop processing **and delete derived embeddings/artifacts** (not just the source clip) — the no-orphan-derivative rule (§I.3).
 - **H.6 Biometric ≠ anonymizable.** Treat "anonymized" gait/style/face data as **still personal** (§B.9); only true aggregates with **differential privacy** may be published (§H.8).
 - **H.7 Bystander & edge privacy.** Blur spectator/minor faces in background (Part 15); offer an **edge-private mode** where video never leaves the venue (Part 02/15) (⬜).
-- **H.8 Published aggregates** (leaderboards, research stats) **MUST** apply **differential privacy** / k-anonymity so individuals can't be re-identified.
+- **H.8 Published aggregates** (leaderboards, research stats) **MUST** apply **differential privacy** / k-anonymity so individuals can't be re-identified (ε-budget governance, §AJ.4).
+- **H.9 Transparency & notice.** Data subjects **MUST** receive a clear privacy notice (GDPR Art 13/14): what is collected, purpose, lawful basis, retention, recipients, transfers, rights, and **that profiling/automated decisions occur** (§AC).
+- **H.10 Erasure has a trained-model limit.** Withdrawal deletes derived embeddings/artifacts (§I.2), but influence already baked into model weights needs an explicit **machine-unlearning** stance (§AJ.5) — the platform **MUST NOT** claim a deletion it cannot perform.
 
 ---
 
@@ -153,6 +161,9 @@ Every persisted field and artifact **MUST** carry exactly one **class**; the cla
 - **I.4 Retention.** Per-tenant retention policy with **scheduled deletion**; `operational` events tier to cold/cheap storage then expire (Part 39 §AI). Soft-delete (`deleted_at`, Part 37) is **not** erasure — a hard-delete + crypto-erase path **MUST** back RTBF.
 - **I.5 Records.** Maintain a **ROPA** (records of processing) and a **DPIA** for biometric processing (mandatory, §W).
 - **I.6 Export format** for portability **MUST** be machine-readable (JSON) and exclude other subjects' data.
+- **I.7 Identity-proofing (DSAR-as-attack).** A request **MUST** verify the requester **is** the subject (or authorized guardian) with assurance **proportionate to the data's sensitivity** — an unverified access request is itself an **info-disclosure** vector (social-engineered DSAR). Biometric/`special` exports require stronger proofing.
+- **I.8 DSR abuse protection.** DSR endpoints are **rate-limited + audited** (anti-harvesting/DoS); bulk or automated requests are throttled.
+- **I.9 Legal hold.** Retention/erasure **MUST** honor a **legal hold** (litigation/anti-doping/investigation): held records are exempt from scheduled deletion and the hold is itself audited (§K).
 
 ---
 
@@ -171,17 +182,20 @@ Every persisted field and artifact **MUST** carry exactly one **class**; the cla
 - **K.3 What MUST NEVER be logged:** passwords, tokens, secrets, full signed media URLs, raw biometric vectors, or PII beyond the minimal id needed (§G/§Y). Logs are **themselves** classified `operational` with access control + retention.
 - **K.4 Integrity & availability.** Audit storage is **write-once** for the retention window; alerting fires on anomalous access patterns and on any chain-verification failure.
 - **K.5 Officiating linkage.** Each decisive-call audit entry references the signed decision (§L) and its evidence package (Part 09/40) — a contested call is independently replayable.
+- **K.6 Log-injection / forging.** Untrusted values **MUST** be sanitized of CR/LF/control characters before logging (prevent log forging); structured (JSON) logging is preferred over string concatenation.
+- **K.7 PII leak detection.** A **detective** control (automated scanner) **SHOULD** flag tokens/PII/secret patterns in logs — the "never log PII" rule (§K.3) needs enforcement, not just intent.
 
 ---
 
 ## L. Officiating Integrity (cryptographic, high-stakes)
 
 - **L.1 Reproducibility.** Every decisive call **MUST** be reproducible from provenance (model + code_sha + inputs + seed, Part 40 §J/§BP) and carry a **model card** + **evidence package** (Part 09/40).
-- **L.2 Signature + trusted timestamp.** Each decisive decision **MUST** be **signed with an HSM key** (§G.4) and bound to a **trusted timestamp** → non-repudiation + tamper-evidence.
+- **L.2 Signature + trusted timestamp.** Each decisive decision **MUST** be **signed with an HSM key** (§G.4) and bound to a **trusted timestamp + a unique nonce** (anti-replay) → non-repudiation + tamper-evidence; a replayed or duplicated signed decision is rejected.
 - **L.3 Chain-of-custody.** Evidence packages (clips, frames, tracks) carry an unbroken custody chain from capture (Part 35 provenance hash) to decision.
 - **L.4 Clock integrity.** **NTP/clock integrity** is a security control — a manipulated clock breaks timing-based calls and timestamps; drift is monitored.
 - **L.5 Human oversight.** Decisive calls are **advisory until validated** (Part 40 §K) and surface an **abstain → escalate-to-umpire** path; the system never silently forces a call it cannot defend.
 - **L.6 EU AI Act alignment.** Officiating/selection are likely **high-risk AI** (§W): risk management, logging, human oversight, transparency, and accuracy/robustness evidence are **mandatory** before such features ship.
+- **L.7 Contestability.** A decisive call is an automated decision about a person (§AC): the affected party **MUST** have a right to explanation + a signed, tamper-evident **appeal** path (§AC.3/§AC.4, §AI.5).
 
 ---
 
@@ -299,8 +313,13 @@ Authoritative threat catalog; each maps to a concrete surface on **our** API and
 | **GDPR Art 8 / children** | academies (minors) | **guardian** consent, no ad-profiling, age-appropriate design (§H.3) |
 | **COPPA** (US minors) | US academies | verifiable parental consent, minimization |
 | **BIPA / US biometric laws** | biometric embeddings | written consent, **public retention/deletion schedule**, no sale, private right of action → high liability |
-| **EU AI Act** | officiating / talent selection = likely **high-risk** | risk mgmt, logging, **human oversight** (§L.5), transparency, accuracy/robustness evidence (§Q) |
-| **Anti-doping data** | federation integrations | restricted handling + residency |
+| **EU AI Act** | officiating / talent selection = likely **high-risk** | risk mgmt, logging, **human oversight** (§L.5), transparency, accuracy/robustness evidence (§Q), automated-decision rights (§AC) |
+| **Controller vs Processor (GDPR Art 28)** | controller (own users) **+** processor (federation customers) | declare role per relationship; DPAs; sub-processor register; process on instructions (§AJ.1) |
+| **International transfers (GDPR Ch. V)** | EU data → non-EU processing | adequacy / **SCCs** / BCRs + **TIA**; region-pinning (§AJ.2) |
+| **Transparency (GDPR Art 13/14)** | any personal-data collection | privacy notice: purpose, basis, retention, rights, **profiling disclosure** (§H.9) |
+| **Automated decisions (GDPR Art 22)** | officiating / talent selection / profiling | human review + explanation + **appeal**; no solely-automated on minors (§AC) |
+| **Fairness / non-discrimination** | EU AI Act + equality law | subgroup fairness gate; **no proxy discrimination** (§AC.7 / Part 40) |
+| **Anti-doping data** | federation integrations | restricted handling + residency (§AI.4) |
 | **SOC 2 / ISO 27001 / OWASP ASVS** | enterprise/federation sales | control framework + audit (§AB) |
 
 Compliance claims are **evidenced** (DPIA docs, ROPA, audit exports), never asserted (§A.2 G8).
@@ -348,6 +367,11 @@ Security rules **MUST** be machine-checked in CI (the security analogue of Parts
 | `auth-enumeration` | auth endpoints return generic responses + are rate-limited | ⬜ (current 409 leak, §M.5) |
 | `dep-vuln` | no known-critical CVE in pinned deps; SBOM emitted | ⬜ |
 | `untrusted-media` | URL ingest validates IP ranges; media worker is sandboxed | ⬜ |
+| `safe-model-loading` | weights load via `safetensors` / sandbox — no in-process `pickle`/`torch.load` of untrusted files | ⬜ |
+| `path-traversal` | `storage_key`/path inputs validated against an allow-listed prefix (no `..`/absolute) | ⬜ |
+| `no-shell-exec` | media tooling invoked with arg arrays — no `shell=True` / string interpolation | ⬜ |
+| `csprng` | tokens/ids/salts/nonces use `secrets`/`os.urandom`, never `random` | 🟡 (assert) |
+| `consent-gate` | access to `biometric`/`special`/`minor` checks a valid consent | ⬜ |
 
 - **Z.1** Each ✅/🟡 invariant **MUST** have a test; promoting 🟡→✅ means the CI assertion exists, not just the behavior.
 - **Z.2** The build manifest (Part 37 governance) **SHOULD** record the security-gate result alongside the other checks.
@@ -379,8 +403,20 @@ Security rules **MUST** be machine-checked in CI (the security analogue of Parts
 | Security-headers middleware | — | ⬜ |
 | Face/bystander blurring; edge-private mode | — | ⬜ |
 | SBOM + dependency-vuln gate; SAST | — | ⬜ |
+| Enterprise SSO (OIDC/SAML) + SCIM provisioning | — | ⬜ |
+| Workload identity (mTLS / SPIFFE) for services | — | ⬜ |
+| Safe model loading (safetensors / sandbox; no in-proc pickle) | — | ⬜ |
+| Path-traversal guard on `storage_key` | — | ⬜ |
+| PEP/PDP policy-as-code + consent-as-authz | `require_roles` (scattered today) | ⬜ |
+| Infra/cloud/container hardening (CSPM, PSS, segmentation) | — | ⬜ |
+| Cyber-physical safety (command-auth, E-stop) — Part 14 | — | ⬜ |
+| Market-integrity barriers (embargo, insider controls) | — | ⬜ |
+| Controller/Processor declaration + DPA + sub-processor register | — | ⬜ |
+| International-transfer mechanism (SCCs/TIA) | — | ⬜ |
+| Art 22 human-review + explanation + appeal | — | ⬜ |
+| Machine-unlearning policy / DP ε-budget | — | ⬜ |
 
-This table is the **truth** of where security stands today: a sound auth/RBAC/tenant/secret-scan core (✅), with the privacy-record, tamper-evidence, encryption-config, and abuse-protection layers **specified and tracked** (⬜) — production-blocking, not optional.
+This table is the **truth** of where security stands today: a sound auth/RBAC/tenant/secret-scan core (✅), with the privacy-record, tamper-evidence, encryption-config, abuse-protection, enterprise-identity, app-sec-hardening, cyber-physical-safety, and deep-compliance layers **specified and tracked** (⬜) — production-blocking, not optional. The breadth of ⬜ is deliberate honesty (§B.5): a green checkmark is earned by code, not by intent.
 
 ---
 
@@ -394,19 +430,101 @@ This table is the **truth** of where security stands today: a sound auth/RBAC/te
 
 ---
 
-## AC. Open Problems & Roadmap (honest)
+## AC. Automated Decision-Making, Profiling & Contestability (GDPR Art 22 / EU AI Act)
+
+Talent selection (Part 08), officiating calls (Part 09), and player profiling (Part 17) are **decisions about people with legal or significant effects** — governed beyond accuracy (Part 40).
+
+- **AC.1 No solely-automated significant decisions** about a person **without** a lawful exception (explicit consent / contract / law) **and** safeguards (GDPR Art 22). On `minor` subjects, solely-automated significant decisions are **forbidden** by default.
+- **AC.2 Human-in-the-loop.** Such decisions **MUST** route through a qualified human with authority + context to **override** — not a rubber stamp (cf. Part 40 §L abstain→escalate).
+- **AC.3 Right to explanation.** The subject **MUST** be able to obtain a **meaningful explanation** of the logic, main factors, and evidence (Part 40 envelope + Part 32 drill-down) in plain language.
+- **AC.4 Right to contest & appeal.** A documented **appeal/dispute** path **MUST** exist (human re-review, evidence package, audit trail §K); the outcome + rationale are recorded.
+- **AC.5 Profiling transparency.** Subjects **MUST** be informed (Art 13/14, §W) that profiling occurs, its purpose + consequences + how to object; profiling of `minor` subjects is minimized and **never** used for advertising.
+- **AC.6 EU AI Act high-risk obligations** (officiating/selection): risk-management system, data governance, technical documentation, logging, human oversight, accuracy/robustness/cybersecurity, and **post-market monitoring** — evidenced (§AB), not asserted.
+- **AC.7 No proxy discrimination.** Decisions **MUST NOT** rely on protected-attribute proxies; fairness is a **release gate** (§AJ / Part 40 fairness).
+
+## AD. Federated Identity & Enterprise SSO
+
+Federations and academies are the buyers; they require enterprise identity. The hand-rolled JWT (§D) is the **scaffold**, not the enterprise contract.
+
+- **AD.1 SSO.** The platform **MUST** support **OIDC** and **SAML 2.0** SSO so a federation's IdP owns authentication; local passwords are disabled for SSO-managed tenants.
+- **AD.2 Provisioning.** **SCIM 2.0** user/group provisioning **+ de-provisioning** — a revoked staff member **MUST** lose access promptly (automated joiner/mover/leaver), not by manual cleanup.
+- **AD.3 Role mapping.** IdP groups map to platform roles (§E) deterministically + audited; no privilege gain via self-asserted claims.
+- **AD.4 Delegated / act-as access.** A coach acting for a player, or support acting for a tenant, **MUST** use explicit, time-boxed, **audited impersonation** (§K) — never shared credentials.
+- **AD.5 Workload / service identity.** Inter-service calls (Part 13) **MUST** use **mTLS + workload identity** (e.g. SPIFFE/SVID) — no static service tokens; least-privilege per service (§B.2).
+- **AD.6 API-key lifecycle.** Programmatic keys are **scoped** (tenant + capability), hashed at rest, **rotatable**, **revocable**, expiring, and listed with last-use; never embedded in distributed clients.
+
+## AE. Authorization Architecture (PEP/PDP & Policy-as-Code)
+
+- **AE.1 Decision point.** Authorization (RBAC + ABAC + field-level, §E) **SHOULD** be evaluated by a central **PDP** (policy decision point) with **PEPs** at each entry, so policy is consistent + testable — not scattered `if role ==` checks.
+- **AE.2 Policy-as-code.** Policies **SHOULD** be code (e.g. **OPA/Rego** or **Cedar**), **version-controlled, reviewed, unit-tested**; a policy change is a tracked, audited deploy.
+- **AE.3 Consent as an authorization input.** Access to `biometric`/`special`/`minor` data **MUST** be denied at the PDP when a **valid consent (§H) is absent or withdrawn** — consent gates access **programmatically**, not just as a record.
+- **AE.4 Fail-closed + decision logging.** Authorization errors **default-deny**; sensitive-data denies **SHOULD** be logged (§K) for anomaly detection.
+
+## AF. Application Security: Injection, Deserialization & File Safety
+
+Concrete, code-level controls for **our** surface (uploads, model weights, media, storage keys).
+
+- **AF.1 Model-weight deserialization is RCE.** Loading pretrained weights (Part 26) via `pickle`/`torch.load` **executes arbitrary code**. The platform **MUST** prefer **`safetensors`** (non-executable), verify **checksum + signature** (§Q.5), and load any unavoidable pickle **only** in a network-isolated sandbox (§N.2). Untrusted weights are **never** loaded in-process. ⬜ (gap — Part 26 reuse path).
+- **AF.2 Path traversal.** Storage identifiers (`Video.storage_key`) and any path/key derived from input **MUST** be validated/canonicalized against an allow-listed prefix; `..` and absolute paths are rejected — never `open()` a client-influenced path directly. ⬜ (gap — concrete to the pipeline).
+- **AF.3 Command injection.** Media tooling (ffmpeg/OpenCV) **MUST** be invoked with **argument arrays, never a shell string**; no input value reaches a shell; binaries are pinned.
+- **AF.4 Decompression / pixel-flood bombs.** Uploads **MUST** cap decoded dimensions, duration, frame count, and output size; reject media that expands beyond limits (zip/video/image bombs) — a resource-exhaustion DoS.
+- **AF.5 File validation.** Validate by **magic bytes** (not extension/MIME), reject **polyglots**, **transcode to a known-safe form** before use; strip/validate container metadata.
+- **AF.6 SQL/NoSQL injection.** All DB access is **parameterized** (SQLAlchemy ORM ✅); raw SQL with string interpolation is forbidden.
+- **AF.7 Log injection.** Untrusted values written to logs are sanitized of CR/LF/control chars to prevent log forging (§K.6).
+
+## AG. Infrastructure, Cloud, Network & Container Security
+
+- **AG.1 Zero-trust network.** Private subnets, **default-deny segmentation**, and **egress filtering** (a compromised worker can't call out freely — also an SSRF backstop, §N); service-to-service via mTLS (§AD.5).
+- **AG.2 Containers / K8s.** **Image scanning** in CI, **admission control** (signed images only), **Pod Security Standards** (non-root, read-only FS, no privilege escalation, dropped caps), and **runtime** detection (e.g. Falco).
+- **AG.3 Cloud posture (CSPM).** Continuous misconfiguration scanning; **no public buckets/objects**; least-privilege cloud IAM (no wildcard admin); encryption + logging on by default.
+- **AG.4 Database hardening.** Per-service least-privilege DB users (no shared superuser), TLS connections, query/audit logging, and RLS (§F.3).
+- **AG.5 DNS / TLS lifecycle.** Automated certificate issuance/rotation (ACME), **CAA** records, HSTS preload (§X); monitor for cert/DNS tampering.
+- **AG.6 Backups.** **Immutable / object-lock (WORM)** backups with a **separate key/account**, tested restores, ransomware-resilient retention (§U.2).
+- **AG.7 Bootstrapping (secret-zero).** The secrets-manager trust root (§Y) **MUST** use platform-native workload identity / instance attestation — no long-lived bootstrap secret in an image or repo.
+
+## AH. Cyber-Physical Safety: Robots, Actuators & Wearables (Part 14)
+
+When the platform drives **robots/actuators** or ingests **wearable** streams, security becomes **physical safety**.
+
+- **AH.1 Actuator command authentication.** Every command to a ball-robot/actuator **MUST** be authenticated, integrity-protected, and **replay-protected** (nonce); an unauthenticated command path is a path to **physical harm**.
+- **AH.2 Fail-safe.** Hardware **E-stop**, motion **rate/range/force limits**, watchdogs, and **safe-state on signal loss** are mandatory; software faults degrade to **stop**, never to uncontrolled motion.
+- **AH.3 Physical-harm threat model.** Threat-model the cyber-physical path (spoofed command, hijacked session, malicious firmware) with **safety** (not just confidentiality) as the impact axis; humans-in-the-loop near moving equipment.
+- **AH.4 Device attestation & firmware.** Robots/edge devices use **secure boot + signed firmware + attestation** (§V); revoke compromised devices.
+- **AH.5 Continuous biometric/health streams.** Wearable health/biometric data (heart-rate, IMU, load) is `special`/`biometric` (§C): explicit consent for **continuous** capture, on-device minimization, encrypted transport, athlete control + withdrawal (§H).
+
+## AI. Sport & Market Integrity
+
+- **AI.1 Market-sensitive data.** Live **win-probability**, injury, lineup, and officiating data are **market-moving** (betting). Pre-/in-event predictive data **MUST** have **leak controls + an embargo** until publicly appropriate.
+- **AI.2 Information barriers.** **Insider access** to predictive/officiating data is least-privilege + audited; staff trading/leaking on it is prohibited and monitored (§K anomaly).
+- **AI.3 Manipulation detection.** Detect **betting-driven manipulation** and officiating anomalies (Part 15), coordinated with tamper-evident calls (§L).
+- **AI.4 Anti-doping.** Anti-doping / medical integrations (WADA/ADAMS-style) handle restricted data with strict access, residency, and retention (§C/§W).
+- **AI.5 Dispute & appeal integrity.** The officiating **appeal chain** (§AC.4) is itself tamper-evident: who challenged, what evidence, what changed — signed (§L).
+
+## AJ. Privacy Engineering Depth
+
+- **AJ.1 Controller vs Processor.** The platform's **legal role MUST be declared per relationship**: typically **controller** for its own direct users and **processor** for federation/club customers' athlete data. Processor obligations (process only on documented instructions, sub-processor approval + flow-down, assist with DSR/breach) and a **sub-processor register** are mandatory (§W).
+- **AJ.2 International transfers.** Cross-border transfers **MUST** use a valid mechanism — **adequacy**, **SCCs**, or BCRs — backed by a **Transfer Impact Assessment**; region-pinned storage/processing where required (Part 15 residency).
+- **AJ.3 Pseudonymization rigor.** Separate identifiers from observations where feasible; **pseudonymized ≠ anonymized**, and **biometric is non-anonymizable** (§B.9); **raw video itself re-identifies** (face/gait) and is `personal`/`biometric` even before embeddings.
+- **AJ.4 Differential-privacy budget.** Published aggregates (§H.8) **MUST** track a **DP ε-budget** with governance — repeated queries erode privacy; the budget is finite + audited.
+- **AJ.5 Machine unlearning (the hard one).** Erasure/withdrawal deletes rows + derived artifacts (§I.2), **but data already trained into model weights persists**. The platform **MUST** state its stance — exclude on a **retrain cadence**, support **approximate unlearning**, or rely on a **lawful basis that doesn't require deletion** — and **MUST NOT** claim an erasure it cannot perform (honesty, §B.5). ⬜ open problem (§AK).
+- **AJ.6 Re-identification testing.** Before publishing "anonymized" datasets/aggregates, run a **re-identification / linkage-risk** assessment; biometric-derived data is treated as personal regardless.
+
+## AK. Open Problems & Roadmap (honest)
 
 - **Biometric anonymization is impossible** (§B.9) — manage via consent + minimization + DP aggregates, not de-identification.
 - **Adversarial robustness of officiating** (§Q.1) is unsolved in general — abstain + human oversight (§L.5) until robustness evidence exists.
 - **Cross-border residency** for global federations is operationally hard — region-pinned storage + processing is the roadmap.
 - **Minors at scale** — guardian-consent verification and age-appropriate design across academies need product + legal investment.
 - **Privacy vs accuracy** (edge-private mode reduces central training data) — on-device/federated learning is the long-term answer.
+- **Machine unlearning** (§AJ.5) — removing a withdrawn subject's influence from trained weights is unsolved at low cost; retrain-cadence + approximate unlearning is the roadmap; never claim erasure we can't perform.
+- **Post-quantum cryptography** — current TLS/signatures (§G) are not quantum-safe; crypto-agility (§G.7) is the bridge, a PQC migration the destination (long-term).
+- **Market-integrity vs utility** (§AI) — coaches want live win-probability; betting markets want it too. Embargo/leak-control trades product value for integrity; the boundary needs federation policy.
 
 ---
 
-## AD. Security Glossary & Notation
+## AL. Security Glossary & Notation
 
-Canonical via Part 38 where applicable: **RBAC** (role-based) / **ABAC** (attribute-based) access control · **IDOR** (insecure direct object reference) · **SSRF** (server-side request forgery) · **RLS** (row-level security) · **MFA / WebAuthn / passkeys / FIDO2** · **KDF / Argon2id / PBKDF2** · **KMS / HSM / envelope encryption** · **DPIA** (data-protection impact assessment) · **DSR / DSAR** (data-subject (access) request) · **ROPA** (records of processing) · **RTBF** (right to be forgotten) · **DP** (differential privacy) · **BIPA** (Illinois biometric law) · **ASVS** (OWASP app-sec verification standard) · **SBOM** (software bill of materials) · **ATO** (account takeover) · **break-glass** (audited emergency access) · **class:`biometric|special|minor|personal|operational|secret`** (data classes, §C). Data classes **SHOULD** be added to `i18n/glossary.json` (Part 38) as canonical ids.
+Canonical via Part 38 where applicable: **RBAC** (role-based) / **ABAC** (attribute-based) access control · **PEP/PDP** (policy enforcement/decision point) · **policy-as-code** (OPA/Rego, Cedar) · **IDOR** (insecure direct object reference) · **SSRF** (server-side request forgery) · **RLS** (row-level security) · **SSO / OIDC / SAML** · **SCIM** (provisioning) · **SPIFFE/SVID · mTLS** (workload identity) · **MFA / WebAuthn / passkeys / FIDO2** · **KDF / Argon2id / PBKDF2** · **KMS / HSM / envelope encryption · CSPRNG** · **safetensors** (non-executable weights) · **CRLF** (log-injection vector) · **DPIA** (data-protection impact assessment) · **DSR / DSAR** (data-subject (access) request) · **ROPA** (records of processing) · **RTBF** (right to be forgotten) · **controller / processor** (GDPR roles) · **SCC / TIA** (transfer clauses / impact assessment) · **Art 22** (automated-decision rights) · **DP / ε-budget** (differential privacy) · **CSPM** (cloud security posture) · **WORM / object-lock** (immutable backups) · **E-stop** (cyber-physical fail-safe) · **BIPA** (Illinois biometric law) · **ASVS** (OWASP app-sec verification standard) · **SBOM** (software bill of materials) · **ATO** (account takeover) · **break-glass** (audited emergency access) · **class:`biometric|special|minor|personal|operational|secret`** (data classes, §C). Data classes **SHOULD** be added to `i18n/glossary.json` (Part 38) as canonical ids.
 
 This document is the authoritative security, privacy & compliance law for TT-OS; with the data model (37), ontology (38), event contract (39), and reliability law (40), it completes the platform's build foundation — **structure, meaning, communication, honesty, and trust.**
 
